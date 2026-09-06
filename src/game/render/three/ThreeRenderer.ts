@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import type { GameMode, GameState } from '../../types.ts';
 import type { GameRenderer } from '../GameRenderer.ts';
-import { gameXToWorld, gameYToWorld } from './worldMapping.ts';
-import { CAMERA_CONFIG, getCameraLookAt, getCameraPosition } from './cameraConfig.ts';
+import { gameXToWorld, gameYToWorld, getForwardFromGameState } from './worldMapping.ts';
+import { CAMERA_CONFIG, getCameraRig } from './cameraConfig.ts';
 import { buildArenaScene, buildLighting } from './buildArenaScene.ts';
 import { buildActorScene } from './actorScene.ts';
 import { SpellScene } from './spellScene.ts';
@@ -65,15 +65,15 @@ export class ThreeRenderer implements GameRenderer {
 		const playerX = gameXToWorld(state.player.x);
 		const playerZ = gameYToWorld(state.player.y);
 		const shake = state.shake;
+		const forward = getForwardFromGameState(state);
+		const rig = getCameraRig(playerX, playerZ, forward.forwardX, forward.forwardZ);
 
-		const cameraPos = getCameraPosition(playerX, playerZ);
-		const lookAt = getCameraLookAt(playerX, playerZ);
 		this.camera.position.set(
-			cameraPos.x + (Math.random() - 0.5) * shake * 0.35,
-			cameraPos.y + (Math.random() - 0.5) * shake * 0.2,
-			cameraPos.z + (Math.random() - 0.5) * shake * 0.35,
+			rig.position.x + (Math.random() - 0.5) * shake * 0.35,
+			rig.position.y + (Math.random() - 0.5) * shake * 0.2,
+			rig.position.z + (Math.random() - 0.5) * shake * 0.35,
 		);
-		this.camera.lookAt(lookAt);
+		this.camera.lookAt(rig.lookAt);
 
 		this.actors.updatePlayer(state.player, state.time);
 		this.actors.updateBoss(state.boss, state.phase2, state.time);
