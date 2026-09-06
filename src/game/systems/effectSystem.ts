@@ -13,8 +13,15 @@ function getTotalMaxReduction(boss: BossState): number {
 }
 
 function syncBossEffectiveMax(boss: BossState): void {
-	boss.max = Math.max(1, boss.baseMax - getTotalMaxReduction(boss));
-	boss.hp = Math.min(boss.hp, boss.max);
+	const nextMax = Math.max(1, boss.baseMax - getTotalMaxReduction(boss));
+	if (nextMax === boss.max) {
+		return;
+	}
+
+	boss.max = nextMax;
+	if (boss.hp > boss.max) {
+		boss.hp = boss.max;
+	}
 }
 
 function findActiveEffect(boss: BossState, effectId: EffectId): ActiveEffect | undefined {
@@ -29,9 +36,7 @@ function createActiveEffect(definition: EffectDefinition): ActiveEffect {
 	return {
 		effectId: definition.id,
 		remainingDuration: definition.duration,
-		tickTimer: definition.kind === 'damageOverTime'
-			? definition.dot.tickInterval
-			: definition.dot?.tickInterval ?? definition.duration,
+		tickTimer: 0,
 		appliedMaxReduction,
 	};
 }
@@ -53,6 +58,7 @@ function tickEffectDot(ctx: CombatContext, definition: EffectDefinition): void {
 		particles: 4,
 		particleColor: definition.particleColor,
 		particleSpeed: 50,
+		audio: false,
 	});
 }
 
@@ -71,7 +77,7 @@ export function applyEffectToBoss(ctx: CombatContext, effectId: EffectId): void 
 
 	if (existing) {
 		existing.remainingDuration = definition.duration;
-		existing.tickTimer = getDotParams(definition)?.tickInterval ?? existing.tickTimer;
+		existing.tickTimer = 0;
 		return;
 	}
 
@@ -95,7 +101,7 @@ export function updateBossEffects(ctx: CombatContext, dt: number): void {
 	const { boss } = state;
 	if (boss.hp <= 0 || boss.effects.length === 0) return;
 
-	const expired: EffectId[] = [];
+	const remaining: ActiveEffect[] = [];
 
 	for (const active of boss.effects) {
 		const definition = EFFECTS[active.effectId];
@@ -107,16 +113,21 @@ export function updateBossEffects(ctx: CombatContext, dt: number): void {
 			while (active.tickTimer <= 0 && active.remainingDuration > 0) {
 				tickEffectDot(ctx, definition);
 				active.tickTimer += dot.tickInterval;
+				if (boss.hp <= 0) {
+					return;
+				}
 			}
 		}
 
-		if (active.remainingDuration <= 0) {
-			expired.push(active.effectId);
+		if (active.remainingDuration > 0) {
+			remaining.push(active);
 		}
 	}
 
-	if (expired.length === 0) return;
+	if (remaining.length === boss.effects.length) {
+		return;
+	}
 
-	boss.effects = boss.effects.filter((active) => !expired.includes(active.effectId));
+	boss.effects = remaining;
 	syncBossEffectiveMax(boss);
 }

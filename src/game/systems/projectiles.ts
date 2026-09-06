@@ -8,13 +8,15 @@ export function updateProjectiles(ctx: CombatContext, dt: number): void {
 
 	state.shots = state.shots.filter((shot) => {
 		const spell = getSpellDefinition(shot.spellId);
+		const prevX = shot.x;
+		const prevY = shot.y;
 
 		shot.x += shot.vx * dt;
 		shot.y += shot.vy * dt;
 		shot.t -= dt;
 		spawnSpellTrail(state, shot.x, shot.y, spell.visual);
 
-		if (isProjectileHit(state, shot.x, shot.y, spell.projectile.hitRadius)) {
+		if (isProjectileHit(state, prevX, prevY, shot.x, shot.y, spell.projectile.hitRadius)) {
 			const damage = getSpellDamage(spell, shot.powered);
 			hitBoss(ctx, damage, spell.damageType, {
 				particleColor: spell.visual.impact.primaryColor,
