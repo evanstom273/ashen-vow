@@ -1,5 +1,6 @@
 import { PLAYER_START } from '../content/playerDefaults.ts';
 import { AERON } from '../content/aeron.ts';
+import { initializeSpellLoadout, replenishSpellsAtRest } from './spellState.ts';
 import type { BossState, GameState, InputState, PlayerState } from '../types.ts';
 
 export function createPlayerState(): PlayerState {
@@ -32,7 +33,7 @@ export function createBossState(): BossState {
 }
 
 export function createInitialGameState(): GameState {
-	return {
+	const state: GameState = {
 		mode: 'title',
 		attempts: 0,
 		time: 0,
@@ -41,12 +42,16 @@ export function createInitialGameState(): GameState {
 		shots: [],
 		particles: [],
 		hazards: [],
+		equippedSpellId: 'ashen-bolt',
+		spells: {} as GameState['spells'],
 		charge: 0,
 		charging: false,
 		shake: 0,
 		noticeTime: 0,
 		phase2: false,
 	};
+	initializeSpellLoadout(state);
+	return state;
 }
 
 export function createInitialInputState(): InputState {
@@ -69,4 +74,5 @@ export function resetCombatState(state: GameState): void {
 	state.charging = false;
 	state.noticeTime = 0;
 	state.shake = 0;
+	replenishSpellsAtRest(state);
 }

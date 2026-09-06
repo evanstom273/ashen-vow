@@ -65,6 +65,6 @@ export function isPlayerInBlast(state: GameState, x: number, y: number, radius: 
 	return Math.hypot(state.player.x - x, state.player.y - y) < radius;
 }
 
-export function isProjectileHit(state: GameState, shotX: number, shotY: number): boolean {
-	return dist({ x: shotX, y: shotY }, state.boss) < AERON.combat.projectileHitRadius;
+export function isProjectileHit(state: GameState, shotX: number, shotY: number, hitRadius: number): boolean {
+	return dist({ x: shotX, y: shotY }, state.boss) < hitRadius;
 }

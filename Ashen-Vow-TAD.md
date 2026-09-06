@@ -49,7 +49,8 @@ Dependencies are intentionally minimal: Vite and TypeScript only.
 Top-level state includes:
 
 - `mode`: title, play, pause, dead, or win
-- `player`: position, health, focus, stamina, flasks, facing, roll, invulnerability, cooldowns, healing, and charge-related timers
+- `player`: position, health, stamina, flasks, facing, roll, invulnerability, cooldowns, healing, and charge-related timers
+- `equippedSpellId` and `spells`: per-spell remaining casts and cooldown timers
 - `boss`: position, health, facing, finite-state-machine state, attack timer, attack target, combo counter, and phase flash
 - `shots`: active sorcery projectiles
 - `hazards`: temporary blast and expanding ring hazards
@@ -63,6 +64,7 @@ State is created via `createInitialGameState()` and reset via `resetCombatState(
 Hardcoded prototype values are grouped under `src/game/content/`:
 
 - `playerDefaults.ts` — player starting stats and action tuning
+- `spells.ts` — spell definitions (max casts, cooldown, projectile tuning, rest recharge flag)
 - `aeron.ts` — Aeron boss stats, phase labels, and attack definitions
 - `arena.ts` — arena geometry constants
 
@@ -107,7 +109,7 @@ Actors remain procedural Canvas shapes rather than external image assets.
 
 ## UI integration
 
-`DomHud` updates health, focus, stamina, flask count, status text, boss health, and phase text from simulation state. `OverlayController` manages title/pause/death/victory copy and the `body.playing` class. Plain DOM/CSS is used throughout; no component framework is involved in the game loop.
+`DomHud` updates health, equipped spell remaining casts, stamina, flask count, status text, boss health, and phase text from simulation state. `OverlayController` manages title/pause/death/victory copy and the `body.playing` class. Plain DOM/CSS is used throughout; no component framework is involved in the game loop.
 
 ## Audio
 
@@ -148,7 +150,8 @@ This release is an architectural migration only. Gameplay timings, controls, bos
 
 Preserved prototype quirks documented for future reference:
 
-- Player max HP/FP/SP are hard-coded to 100 in multiple places rather than always referencing shared constants.
+- Player max HP/SP are hard-coded to 100 in multiple places rather than always referencing shared constants.
+- Spell charges replenish when entering/resting at the sanctum (starting or retrying an attempt), not mid-fight.
 - Boss attack selection uses a simple rotating combo counter rather than weighted or reactive AI.
 - Ring hazard collision uses a fixed tolerance band (`abs(distance - radius) < 13`).
 - Sorcery charge visual particles spawn probabilistically (`Math.random() < 0.5`).

@@ -1,14 +1,12 @@
 import type { PlayerState } from '../types.ts';
 
 export const PLAYER_MAX_HP = 100;
-export const PLAYER_MAX_FP = 100;
 export const PLAYER_MAX_SP = 100;
 
 export const PLAYER_START: Omit<PlayerState, 'roll' | 'inv' | 'cd' | 'heal' | 'swing' | 'regen'> = {
 	x: 500,
 	y: 550,
 	hp: PLAYER_MAX_HP,
-	fp: PLAYER_MAX_FP,
 	sp: PLAYER_MAX_SP,
 	flasks: 3,
 	angle: -Math.PI / 2,
@@ -33,18 +31,6 @@ export const PLAYER_TUNING = {
 		damage: 65,
 		regenLock: 0.65,
 	},
-	sorcery: {
-		basicFocusCost: 14,
-		chargedFocusCost: 28,
-		chargeThreshold: 0.8,
-		maxCharge: 1.4,
-		cooldown: 0.45,
-		projectileSpeed: 460,
-		projectileLifetime: 2,
-		basicDamage: 65,
-		chargedDamage: 150,
-		hitRadius: 38,
-	},
 	heal: {
 		duration: 0.95,
 		cooldown: 1,
@@ -52,12 +38,10 @@ export const PLAYER_TUNING = {
 	},
 	movement: {
 		normalSpeed: 175,
-		chargingSpeed: 95,
 		healingSpeed: 65,
 	},
 	regen: {
 		staminaPerSecond: 30,
-		focusPerSecond: 3,
 	},
 	invulnerabilityAfterHit: 0.65,
 	staminaLowThreshold: 25,
