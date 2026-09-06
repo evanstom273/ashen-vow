@@ -9,7 +9,7 @@ import {
 import { PLAYER_TUNING } from '../content/playerDefaults.ts';
 import { spawnBurst } from '../effects/particles.ts';
 import type { GameState, PlayerAction, StickInput } from '../types.ts';
-import { getLockOnTargetPosition } from './lockOn.ts';
+import { getCastAimAngle, toggleBossLockOn } from './lockOn.ts';
 import type { CombatContext } from './combat.ts';
 
 export interface PlayerActionContext extends CombatContext {
@@ -46,6 +46,11 @@ export function handlePlayerAction(ctx: PlayerActionContext, action: PlayerActio
 		audio.play(420, 0.08, 'sine', 0.03);
 	}
 
+	if (action === 'toggleLockOn' && player.heal <= 0 && player.roll <= 0) {
+		const locked = toggleBossLockOn(state);
+		audio.play(locked ? 520 : 360, 0.1, 'sine', 0.04);
+	}
+
 	if (action === 'castStart' && player.cd <= 0 && player.roll <= 0 && player.heal <= 0 && canCastEquippedSpell(state)) {
 		state.charging = true;
 		state.charge = 0;
@@ -72,8 +77,7 @@ export function releaseCast(ctx: CombatContext): void {
 	const spell = getEquippedSpellDefinition(state);
 	const powered = isSpellCharged(spell, state.charge);
 	consumeEquippedSpellCast(state);
-	const target = getLockOnTargetPosition(state) ?? state.boss;
-	const angle = Math.atan2(target.y - state.player.y, target.x - state.player.x);
+	const angle = getCastAimAngle(state);
 	state.shots.push({
 		x: state.player.x,
 		y: state.player.y,

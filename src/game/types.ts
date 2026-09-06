@@ -151,6 +151,7 @@ export interface StickInput {
 export type PlayerAction =
 	| 'dodge'
 	| 'cycleSpell'
+	| 'toggleLockOn'
 	| 'useConsumable'
 	| 'castStart'
 	| 'castRelease'

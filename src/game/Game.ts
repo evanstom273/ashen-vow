@@ -4,7 +4,7 @@ import { decayShake, updateParticles } from './effects/particles.ts';
 import { InputSystem } from './input/InputSystem.ts';
 import type { GameRenderer } from './render/GameRenderer.ts';
 import { transformMovementForCamera } from './render/three/worldMapping.ts';
-import { activateBossLockOn } from './systems/lockOn.ts';
+import { updateLockOnFacing } from './systems/lockOn.ts';
 import { updateBoss } from './systems/bossUpdate.ts';
 import { constrainToArena, type CombatContext } from './systems/combat.ts';
 import { updateHazards } from './systems/hazards.ts';
@@ -89,7 +89,6 @@ export class Game {
 		this.state.attempts += 1;
 		this.state.mode = 'play';
 		this.overlay.setPlaying(true);
-		activateBossLockOn(this.state);
 		this.announce('THE LAST WATCH', 2.5);
 	}
 
@@ -162,6 +161,7 @@ export class Game {
 		const movement = this.getMovementInput();
 		updatePlayerMovement(this.state, movement, dt);
 		constrainToArena(this.state.player);
+		updateLockOnFacing(this.state);
 
 		updateBoss(
 			{
