@@ -14,7 +14,9 @@ import {
 	drawProjectiles,
 } from './drawActors.ts';
 
-export class CanvasRenderer {
+import type { GameRenderer } from './GameRenderer.ts';
+
+export class CanvasRenderer implements GameRenderer {
 	private readonly canvas: HTMLCanvasElement;
 	private readonly ctx: CanvasRenderingContext2D;
 	private viewport: Viewport = { w: 0, h: 0, scale: 1, ox: 0, oy: 0 };

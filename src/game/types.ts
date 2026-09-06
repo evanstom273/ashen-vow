@@ -134,6 +134,12 @@ export interface GameState {
 	shake: number;
 	noticeTime: number;
 	phase2: boolean;
+	lockOn: LockOnState;
+}
+
+export interface LockOnState {
+	active: boolean;
+	targetId: 'boss' | null;
 }
 
 export interface StickInput {
