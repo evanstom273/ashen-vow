@@ -20,7 +20,7 @@ The player enters a ruined sanctum and faces **Aeron, the Hollow King** in a sho
 - Stamina management
 - Directional dodge roll with invulnerability frames
 - Melee attacks
-- Sorcery with tap and charged casts
+- Sorcery with limited per-spell casts (replenish at sanctum rest/retry), tap or hold-to-charge
 - Interruptible healing
 - Boss attack telegraphs and punish windows
 - Three boss attack patterns
