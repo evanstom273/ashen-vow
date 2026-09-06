@@ -7,7 +7,6 @@ export function drawKnight(
 	isBoss: boolean,
 	time: number,
 	phase2: boolean,
-	playerSwing: number,
 ): void {
 	const radius = isBoss ? 25 : 13;
 	ctx.save();
@@ -69,21 +68,11 @@ export function drawKnight(
 			: bossEntity.state === 'attack'
 				? 1.4
 				: 0.2
-		: playerSwing > 0
-			? 1.5 - playerSwing * 10
-			: 0.2;
+		: 0.2;
 	ctx.rotate(weaponAngle);
 	drawLine(ctx, 0, 10, 0, isBoss ? -64 : -34, isBoss ? '#c2b99b' : '#d7e0ca', isBoss ? 7 : 3);
 	drawLine(ctx, -8, 0, 8, 0, '#ac9461', 3);
 	ctx.restore();
-
-	if (!isBoss && playerSwing > 0) {
-		ctx.beginPath();
-		ctx.arc(0, 0, 75, -2.5, 0.1);
-		ctx.strokeStyle = '#e8dfb8aa';
-		ctx.lineWidth = 9;
-		ctx.stroke();
-	}
 
 	ctx.restore();
 }

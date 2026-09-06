@@ -127,8 +127,14 @@ export interface StickInput {
 	y: number;
 }
 
-/** Logical action keys consumed by combat systems (not movement). */
-export type ActionKey = ' ' | 'j' | 'k' | 'e' | 'Escape';
+/** Logical player actions — independent of physical input device. */
+export type PlayerAction =
+	| 'dodge'
+	| 'cycleSpell'
+	| 'useConsumable'
+	| 'castStart'
+	| 'castRelease'
+	| 'pause';
 
 export interface InputState {
 	keys: Record<string, boolean>;

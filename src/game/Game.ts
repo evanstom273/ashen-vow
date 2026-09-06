@@ -7,8 +7,8 @@ import { updateBoss } from './systems/bossUpdate.ts';
 import { constrainToArena, type CombatContext } from './systems/combat.ts';
 import { updateHazards } from './systems/hazards.ts';
 import {
-	castSorcery,
-	handleAction,
+	handlePlayerAction,
+	releaseCast,
 	updatePlayerHealing,
 	updatePlayerMovement,
 	updatePlayerRegen,
@@ -19,7 +19,7 @@ import { createInitialGameState, createInitialInputState, resetCombatState } fro
 import { updateSpellCooldowns } from './state/spellState.ts';
 import { DomHud } from './ui/DomHud.ts';
 import { OverlayController } from './ui/OverlayController.ts';
-import type { ActionKey, GameState, InputState } from './types.ts';
+import type { GameState, InputState, PlayerAction } from './types.ts';
 
 export class Game {
 	private readonly state: GameState = createInitialGameState();
@@ -35,8 +35,8 @@ export class Game {
 		this.renderer = new CanvasRenderer(canvas);
 		this.input = new InputSystem(
 			this.inputState,
-			(key) => this.onAction(key),
-			() => this.onCast(),
+			(action) => this.onAction(action),
+			() => this.onCastRelease(),
 			() => this.state.mode,
 			() => this.start(),
 		);
@@ -117,19 +117,19 @@ export class Game {
 		}, 1000);
 	}
 
-	private onAction(key: ActionKey): void {
-		handleAction(
+	private onAction(action: PlayerAction): void {
+		handlePlayerAction(
 			{
 				...this.combatContext,
 				onPause: () => this.togglePause(),
 				getMovementInput: () => this.input.getMovementInput(),
 			},
-			key,
+			action,
 		);
 	}
 
-	private onCast(): void {
-		castSorcery(this.combatContext);
+	private onCastRelease(): void {
+		releaseCast(this.combatContext);
 	}
 
 	private update(dt: number): void {

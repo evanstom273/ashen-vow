@@ -23,14 +23,6 @@ export const PLAYER_TUNING = {
 		regenLock: 0.65,
 		cooldownGate: 0.2,
 	},
-	strike: {
-		staminaCost: 18,
-		cooldown: 0.43,
-		swingDuration: 0.22,
-		range: 105,
-		damage: 65,
-		regenLock: 0.65,
-	},
 	heal: {
 		duration: 0.95,
 		cooldown: 1,
