@@ -29,6 +29,8 @@ export class DomHud {
 	private readonly slotSpellIndexEl = $('slotSpellIndex');
 	private readonly slotFlasksEl = $('slotFlasks');
 	private readonly slotRightEl = $('slotRight');
+	private readonly slotLockEl = $('slotLock');
+	private readonly slotLockStateEl = $('slotLockState');
 
 	announceWithTimer(state: GameState, message: string, duration = 2): void {
 		this.noticeEl.textContent = message;
@@ -59,9 +61,13 @@ export class DomHud {
 		this.slotFlasksEl.textContent = String(player.flasks);
 		this.slotRightEl.classList.toggle('is-charging', state.charging);
 		this.slotRightEl.classList.toggle('is-ready', canCastEquippedSpell(state));
+		this.slotLockEl.classList.toggle('is-locked', state.lockOn.active);
+		this.slotLockStateEl.textContent = state.lockOn.active ? 'on' : 'off';
 
 		this.stateEl.textContent = player.heal > 0
 			? 'DRINKING…'
+			: state.lockOn.active
+				? 'LOCKED ON'
 				: state.charging
 					? isSpellCharged(spell, state.charge)
 						? 'SORCERY CHARGED'

@@ -38,6 +38,7 @@
 			<span><kbd>W A S D</kbd> Move</span>
 			<span><kbd>SPACE</kbd> Dodge</span>
 			<span><kbd>Q</kbd> Cycle spell</span>
+			<span><kbd>R</kbd> Lock on</span>
 			<span><kbd>K</kbd> Right hand <em>hold to cast</em></span>
 			<span><kbd>E</kbd> Flask</span>
 			<span class="controller">Controller supported</span>
@@ -49,9 +50,10 @@
 				<strong class="slot-count" id="slotSpellCasts">8</strong>
 				<small class="slot-meta" id="slotSpellIndex">1/2</small>
 			</button>
-			<button type="button" class="slot slot-left" disabled aria-label="Left hand (empty)">
-				<span class="slot-tag">L</span>
-				<span class="slot-empty">—</span>
+			<button type="button" class="slot slot-left slot-lock" id="slotLock" data-action="toggleLockOn" aria-label="Lock on">
+				<span class="slot-tag">Lock</span>
+				<span class="slot-title">Aim</span>
+				<small class="slot-meta" id="slotLockState">off</small>
 			</button>
 			<button type="button" class="slot slot-right" id="slotRight" data-action="castStart" aria-label="Right hand cast">
 				<span class="slot-tag">R</span>
@@ -80,7 +82,7 @@
 				<p id="description">Beyond the fog, the last king keeps his watch.<br>Learn his rhythm. Find your opening.</p>
 				<button id="begin">ENTER THE SANCTUM <span>→</span></button>
 				<div class="tip" id="tip">Death is a lesson. Return as often as it takes.</div>
-				<div class="startControls">WASD / stick · Move &nbsp; Space · Dodge &nbsp; Q · Cycle spell<br>K · Right hand (hold to cast) &nbsp; E · Flask<br><small>Gamepad: stick · B / ○ dodge · L1 cycle · R2 cast · X / □ flask</small></div>
+				<div class="startControls">WASD / stick · Move &nbsp; Space · Dodge &nbsp; Q · Cycle spell<br>R · Lock on &nbsp; K · Right hand (hold to cast) &nbsp; E · Flask<br><small>Gamepad: stick · B / ○ dodge · L1 cycle · R3 lock · R2 cast · X / □ flask</small></div>
 			</div>
 		</section>
 	</main>
