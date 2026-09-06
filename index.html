@@ -46,17 +46,15 @@
 			<span class="controller">Controller supported</span>
 		</footer>
 		<div id="touch">
-			<div class="dpad">
-				<button data-key="w">↑</button>
-				<button data-key="a">←</button>
-				<button data-key="s">↓</button>
-				<button data-key="d">→</button>
+			<div class="move-stick" aria-label="Move">
+				<div class="move-stick-base"></div>
+				<div class="move-stick-knob"></div>
 			</div>
 			<div class="actions">
-				<button data-key=" ">Dodge</button>
-				<button data-key="j">Strike</button>
-				<button data-key="k">Cast</button>
-				<button data-key="e">Heal</button>
+				<button type="button" class="touch-btn touch-btn-dodge" data-key=" " aria-label="Dodge">Dodge</button>
+				<button type="button" class="touch-btn touch-btn-strike" data-key="j" aria-label="Strike">Strike</button>
+				<button type="button" class="touch-btn touch-btn-cast" data-key="k" aria-label="Cast sorcery">Cast</button>
+				<button type="button" class="touch-btn touch-btn-heal" data-key="e" aria-label="Heal">Heal</button>
 			</div>
 		</div>
 		<section id="overlay">
@@ -66,7 +64,7 @@
 				<p id="description">Beyond the fog, the last king keeps his watch.<br>Learn his rhythm. Find your opening.</p>
 				<button id="begin">ENTER THE SANCTUM <span>→</span></button>
 				<div class="tip" id="tip">Death is a lesson. Return as often as it takes.</div>
-				<div class="startControls">WASD · Move &nbsp; Space · Dodge &nbsp; J · Strike<br>K · Sorcery (hold to charge) &nbsp; E · Heal<br><small>Gamepad: left stick · B / ○ dodge · R1 strike · R2 cast · X / □ heal</small></div>
+				<div class="startControls">WASD / left stick / touch joystick · Move &nbsp; Space · Dodge &nbsp; J · Strike<br>K · Sorcery (hold to charge) &nbsp; E · Heal<br><small>Gamepad: left stick · B / ○ dodge · R1 strike · R2 cast · X / □ heal</small></div>
 			</div>
 		</section>
 	</main>
