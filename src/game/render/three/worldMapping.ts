@@ -1,5 +1,5 @@
 import { ARENA } from '../../constants.ts';
-import type { StickInput } from '../../types.ts';
+import type { GameState, StickInput } from '../../types.ts';
 import { getCameraMovementAxes } from './cameraConfig.ts';
 
 /** Map simulation X to Three.js X (arena-centered). */
@@ -25,12 +25,31 @@ export function gameAngleToRotation(angle: number): number {
 	return -angle + Math.PI / 2;
 }
 
-/** Remap stick/keyboard input to the fixed camera orientation on the XZ plane. */
-export function transformMovementForCamera(input: StickInput): StickInput {
-	const { forwardX, forwardZ, rightX, rightZ } = getCameraMovementAxes();
+/** View forward on XZ — toward lock-on target when active, else player facing. */
+export function getForwardFromGameState(state: GameState): { forwardX: number; forwardZ: number } {
+	if (state.lockOn.active && state.lockOn.targetId === 'boss') {
+		const dx = gameXToWorld(state.boss.x) - gameXToWorld(state.player.x);
+		const dz = gameYToWorld(state.boss.y) - gameYToWorld(state.player.y);
+		const length = Math.hypot(dx, dz) || 1;
+		return { forwardX: dx / length, forwardZ: dz / length };
+	}
+
+	return {
+		forwardX: Math.cos(state.player.angle),
+		forwardZ: Math.sin(state.player.angle),
+	};
+}
+
+/** Remap stick/keyboard input to the player-relative camera on the XZ plane. */
+export function transformMovementForCamera(
+	input: StickInput,
+	forwardX: number,
+	forwardZ: number,
+): StickInput {
+	const { forwardX: fx, forwardZ: fz, rightX, rightZ } = getCameraMovementAxes(forwardX, forwardZ);
 	const screenY = -input.y;
 	return {
-		x: rightX * input.x + forwardX * screenY,
-		y: rightZ * input.x + forwardZ * screenY,
+		x: rightX * input.x + fx * screenY,
+		y: rightZ * input.x + fz * screenY,
 	};
 }

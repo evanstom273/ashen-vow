@@ -3,7 +3,7 @@ import { AudioManager } from './audio/AudioManager.ts';
 import { decayShake, updateParticles } from './effects/particles.ts';
 import { InputSystem } from './input/InputSystem.ts';
 import type { GameRenderer } from './render/GameRenderer.ts';
-import { transformMovementForCamera } from './render/three/worldMapping.ts';
+import { transformMovementForCamera, getForwardFromGameState } from './render/three/worldMapping.ts';
 import { activateBossLockOn } from './systems/lockOn.ts';
 import { updateBoss } from './systems/bossUpdate.ts';
 import { constrainToArena, type CombatContext } from './systems/combat.ts';
@@ -126,7 +126,9 @@ export class Game {
 
 	private getMovementInput() {
 		const raw = this.input.getMovementInput();
-		return this.cameraRelativeMovement ? transformMovementForCamera(raw) : raw;
+		if (!this.cameraRelativeMovement) return raw;
+		const forward = getForwardFromGameState(this.state);
+		return transformMovementForCamera(raw, forward.forwardX, forward.forwardZ);
 	}
 
 	private onAction(action: PlayerAction): void {
