@@ -53,7 +53,7 @@ export function getCameraMovementAxes(): { forwardX: number; forwardZ: number; r
 	return {
 		forwardX,
 		forwardZ,
-		rightX: forwardZ,
-		rightZ: -forwardX,
+		rightX: -forwardZ,
+		rightZ: forwardX,
 	};
 }
