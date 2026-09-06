@@ -21,6 +21,11 @@ export const CAMERA_CONFIG = {
 	lookOffsetX: 0,
 	lookOffsetY: 12,
 	lookOffsetZ: 120,
+	/**
+	 * Screen-strafe sign derived from the fixed camera rig (+1 for the current offset layout).
+	 * Multiply the computed ground-plane right axis by this when remapping horizontal input.
+	 */
+	strafeSign: 1,
 } as const;
 
 export function getFixedViewForward(): { forwardX: number; forwardZ: number } {
@@ -28,6 +33,15 @@ export function getFixedViewForward(): { forwardX: number; forwardZ: number } {
 	return {
 		forwardX: CAMERA_CONFIG.viewForwardX / length,
 		forwardZ: CAMERA_CONFIG.viewForwardZ / length,
+	};
+}
+
+/** Ground-plane right axis for the fixed camera rig (perpendicular to view forward). */
+export function getFixedViewRight(): { rightX: number; rightZ: number } {
+	const { forwardX, forwardZ } = getFixedViewForward();
+	return {
+		rightX: forwardZ * CAMERA_CONFIG.strafeSign,
+		rightZ: -forwardX * CAMERA_CONFIG.strafeSign,
 	};
 }
 
@@ -50,10 +64,6 @@ export function getCameraRig(playerX: number, playerZ: number): { position: THRE
 /** Fixed camera forward/right on the gameplay XZ plane for movement remapping. */
 export function getCameraMovementAxes(): { forwardX: number; forwardZ: number; rightX: number; rightZ: number } {
 	const { forwardX, forwardZ } = getFixedViewForward();
-	return {
-		forwardX,
-		forwardZ,
-		rightX: -forwardZ,
-		rightZ: forwardX,
-	};
+	const { rightX, rightZ } = getFixedViewRight();
+	return { forwardX, forwardZ, rightX, rightZ };
 }
