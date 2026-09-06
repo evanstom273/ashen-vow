@@ -49,7 +49,8 @@ export class DomHud {
 
 		this.hpEl.style.width = `${player.hp}%`;
 		this.spEl.style.width = `${player.sp}%`;
-		this.bossHpEl.style.width = `${(boss.hp / boss.max) * 100}%`;
+		// Always scale against baseMax so temporary max-HP reduction never looks like a heal.
+		this.bossHpEl.style.width = `${(boss.hp / boss.baseMax) * 100}%`;
 		this.phaseEl.textContent = state.phase2 ? AERON.phases.phase2.label : AERON.phases.phase1.label;
 
 		this.slotSpellNameEl.textContent = spell.displayName;
