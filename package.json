@@ -1,0 +1,16 @@
+{
+	"name": "ashen-vow",
+	"private": true,
+	"version": "0.2.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "tsc && vite build",
+		"typecheck": "tsc --noEmit",
+		"preview": "vite preview --base /ashen-vow/"
+	},
+	"devDependencies": {
+		"typescript": "^5.9.2",
+		"vite": "^7.1.5"
+	}
+}

@@ -1,10 +1,75 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101513"><title>Ashen Vow</title><link rel="stylesheet" href="style.css"></head><body>
-<main id="game"><canvas id="world" aria-label="Dark fantasy combat arena"></canvas>
-<header><a class="wordmark" href="./">ASHEN <span>VOW</span></a><div class="location">THE SUNKEN SANCTUM <span>◇</span> <small>A duel at the end of an age</small></div><button id="pause" aria-label="Pause game">Ⅱ</button></header>
-<section id="hud"><div class="vitals"><div class="sigil">✧</div><div class="bars"><div class="bar health"><i id="hp"></i></div><div class="bar focus"><i id="fp"></i></div><div class="bar stamina"><i id="sp"></i></div><p id="state">UNBROKEN</p></div></div><div class="flask"><span>✦</span><div><strong id="flasks">3</strong> <small>Crimson draught</small><kbd>E</kbd></div></div></section>
-<div id="notice" aria-live="polite"></div>
-<div id="bossHud"><div><span id="bossName">AERON, THE HOLLOW KING</span><small id="phase">I · THE LAST WATCH</small></div><div class="bossbar"><i id="bossHp"></i></div></div>
-<footer><span><kbd>W A S D</kbd> Move</span><span><kbd>SPACE</kbd> Dodge</span><span><kbd>J</kbd> Strike</span><span><kbd>K</kbd> Sorcery <em>hold to charge</em></span><span><kbd>E</kbd> Heal</span><span class="controller">Controller supported</span></footer>
-<div id="touch"><div class="dpad"><button data-key="w">↑</button><button data-key="a">←</button><button data-key="s">↓</button><button data-key="d">→</button></div><div class="actions"><button data-key=" ">Dodge</button><button data-key="j">Strike</button><button data-key="k">Cast</button><button data-key="e">Heal</button></div></div>
-<section id="overlay"><div class="panel"><div class="eyebrow" id="eyebrow">A FALLEN KING. AN UNFINISHED VOW.</div><h1 id="title">ASHEN <span>VOW</span></h1><p id="description">Beyond the fog, the last king keeps his watch.<br>Learn his rhythm. Find your opening.</p><button id="begin">ENTER THE SANCTUM <span>→</span></button><div class="tip" id="tip">Death is a lesson. Return as often as it takes.</div><div class="startControls">WASD · Move &nbsp; Space · Dodge &nbsp; J · Strike<br>K · Sorcery (hold to charge) &nbsp; E · Heal<br><small>Gamepad: left stick · B / ○ dodge · R1 strike · R2 cast · X / □ heal</small></div></div></section>
-</main><script src="game.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<meta name="theme-color" content="#101513">
+	<title>Ashen Vow</title>
+</head>
+<body>
+	<main id="game">
+		<canvas id="world" aria-label="Dark fantasy combat arena"></canvas>
+		<header>
+			<a class="wordmark" href="./">ASHEN <span>VOW</span></a>
+			<div class="location">THE SUNKEN SANCTUM <span>◇</span> <small>A duel at the end of an age</small></div>
+			<button id="pause" aria-label="Pause game">Ⅱ</button>
+		</header>
+		<section id="hud">
+			<div class="vitals">
+				<div class="sigil">✧</div>
+				<div class="bars">
+					<div class="bar health"><i id="hp"></i></div>
+					<div class="bar focus"><i id="fp"></i></div>
+					<div class="bar stamina"><i id="sp"></i></div>
+					<p id="state">UNBROKEN</p>
+				</div>
+			</div>
+			<div class="flask">
+				<span>✦</span>
+				<div><strong id="flasks">3</strong> <small>Crimson draught</small><kbd>E</kbd></div>
+			</div>
+		</section>
+		<div id="notice" aria-live="polite"></div>
+		<div id="bossHud">
+			<div>
+				<span id="bossName">AERON, THE HOLLOW KING</span>
+				<small id="phase">I · THE LAST WATCH</small>
+			</div>
+			<div class="bossbar"><i id="bossHp"></i></div>
+		</div>
+		<footer>
+			<span><kbd>W A S D</kbd> Move</span>
+			<span><kbd>SPACE</kbd> Dodge</span>
+			<span><kbd>J</kbd> Strike</span>
+			<span><kbd>K</kbd> Sorcery <em>hold to charge</em></span>
+			<span><kbd>E</kbd> Heal</span>
+			<span class="controller">Controller supported</span>
+		</footer>
+		<div id="touch">
+			<div class="dpad">
+				<button data-key="w">↑</button>
+				<button data-key="a">←</button>
+				<button data-key="s">↓</button>
+				<button data-key="d">→</button>
+			</div>
+			<div class="actions">
+				<button data-key=" ">Dodge</button>
+				<button data-key="j">Strike</button>
+				<button data-key="k">Cast</button>
+				<button data-key="e">Heal</button>
+			</div>
+		</div>
+		<section id="overlay">
+			<div class="panel">
+				<div class="eyebrow" id="eyebrow">A FALLEN KING. AN UNFINISHED VOW.</div>
+				<h1 id="title">ASHEN <span>VOW</span></h1>
+				<p id="description">Beyond the fog, the last king keeps his watch.<br>Learn his rhythm. Find your opening.</p>
+				<button id="begin">ENTER THE SANCTUM <span>→</span></button>
+				<div class="tip" id="tip">Death is a lesson. Return as often as it takes.</div>
+				<div class="startControls">WASD · Move &nbsp; Space · Dodge &nbsp; J · Strike<br>K · Sorcery (hold to charge) &nbsp; E · Heal<br><small>Gamepad: left stick · B / ○ dodge · R1 strike · R2 cast · X / □ heal</small></div>
+			</div>
+		</section>
+	</main>
+	<script type="module" src="/src/main.ts"></script>
+</body>
+</html>
