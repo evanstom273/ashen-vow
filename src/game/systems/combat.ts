@@ -1,6 +1,5 @@
 import { ARENA, ARENA_BOUNDARY_INSET, dist } from '../constants.ts';
 import { PLAYER_TUNING } from '../content/playerDefaults.ts';
-import { AERON } from '../content/aeron.ts';
 import { spawnBurst } from '../effects/particles.ts';
 import type { AudioManager } from '../audio/AudioManager.ts';
 import type { GameState, Vec2 } from '../types.ts';
@@ -51,10 +50,6 @@ export function hurtPlayer(ctx: CombatContext, damage: number): void {
 	if (player.hp <= 0) {
 		onPlayerDeath();
 	}
-}
-
-export function isPlayerInMeleeRange(state: GameState): boolean {
-	return dist(state.player, state.boss) < AERON.combat.meleeRange;
 }
 
 export function isPlayerInBossMeleeRadius(state: GameState, radius: number): boolean {

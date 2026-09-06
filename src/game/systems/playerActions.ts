@@ -2,28 +2,29 @@ import { PLAYER_TUNING } from '../content/playerDefaults.ts';
 import {
 	canCastEquippedSpell,
 	consumeEquippedSpellCast,
+	cycleEquippedSpell,
 	getEquippedSpellDefinition,
 } from '../state/spellState.ts';
 import { spawnBurst } from '../effects/particles.ts';
-import type { ActionKey, GameState, StickInput } from '../types.ts';
-import { hitBoss, isPlayerInMeleeRange, type CombatContext } from './combat.ts';
+import type { GameState, PlayerAction, StickInput } from '../types.ts';
+import type { CombatContext } from './combat.ts';
 
 export interface PlayerActionContext extends CombatContext {
 	onPause: () => void;
 	getMovementInput: () => StickInput;
 }
 
-export function handleAction(ctx: PlayerActionContext, key: ActionKey): void {
+export function handlePlayerAction(ctx: PlayerActionContext, action: PlayerAction): void {
 	const { state, audio, onPause } = ctx;
-	const { player, boss } = state;
+	const { player } = state;
 
-	if (key === 'Escape') {
+	if (action === 'pause') {
 		onPause();
 		return;
 	}
 	if (state.mode !== 'play') return;
 
-	if (key === ' ' && player.sp >= PLAYER_TUNING.dodge.staminaCost && player.roll <= 0 && player.cd < PLAYER_TUNING.dodge.cooldownGate && player.heal <= 0) {
+	if (action === 'dodge' && player.sp >= PLAYER_TUNING.dodge.staminaCost && player.roll <= 0 && player.cd < PLAYER_TUNING.dodge.cooldownGate && player.heal <= 0) {
 		player.sp -= PLAYER_TUNING.dodge.staminaCost;
 		player.regen = PLAYER_TUNING.dodge.regenLock;
 		player.roll = PLAYER_TUNING.dodge.duration;
@@ -37,24 +38,17 @@ export function handleAction(ctx: PlayerActionContext, key: ActionKey): void {
 		audio.play(170, 0.16, 'triangle');
 	}
 
-	if (key === 'j' && player.cd <= 0 && player.roll <= 0 && player.heal <= 0 && player.sp >= PLAYER_TUNING.strike.staminaCost) {
-		player.sp -= PLAYER_TUNING.strike.staminaCost;
-		player.regen = PLAYER_TUNING.strike.regenLock;
-		player.cd = PLAYER_TUNING.strike.cooldown;
-		player.swing = PLAYER_TUNING.strike.swingDuration;
-		player.angle = Math.atan2(boss.y - player.y, boss.x - player.x);
-		if (isPlayerInMeleeRange(state)) {
-			hitBoss(ctx, PLAYER_TUNING.strike.damage);
-		}
-		audio.play(280, 0.12, 'sawtooth', 0.02);
+	if (action === 'cycleSpell' && player.heal <= 0 && player.roll <= 0) {
+		cycleEquippedSpell(state);
+		audio.play(420, 0.08, 'sine', 0.03);
 	}
 
-	if (key === 'k' && player.cd <= 0 && player.roll <= 0 && player.heal <= 0 && canCastEquippedSpell(state)) {
+	if (action === 'castStart' && player.cd <= 0 && player.roll <= 0 && player.heal <= 0 && canCastEquippedSpell(state)) {
 		state.charging = true;
 		state.charge = 0;
 	}
 
-	if (key === 'e' && player.flasks > 0 && player.hp < 100 && player.heal <= 0 && player.roll <= 0 && player.cd <= 0) {
+	if (action === 'useConsumable' && player.flasks > 0 && player.hp < 100 && player.heal <= 0 && player.roll <= 0 && player.cd <= 0) {
 		player.heal = PLAYER_TUNING.heal.duration;
 		player.cd = PLAYER_TUNING.heal.cooldown;
 		player.flasks -= 1;
@@ -65,7 +59,7 @@ export function handleAction(ctx: PlayerActionContext, key: ActionKey): void {
 	}
 }
 
-export function castSorcery(ctx: CombatContext): void {
+export function releaseCast(ctx: CombatContext): void {
 	const { state, audio } = ctx;
 	if (!state.charging) return;
 
@@ -92,7 +86,6 @@ export function updatePlayerRegen(state: GameState, dt: number): void {
 	const { player } = state;
 	player.inv -= dt;
 	player.cd -= dt;
-	player.swing -= dt;
 	player.regen -= dt;
 
 	if (player.regen <= 0 && player.roll <= 0 && !state.charging) {

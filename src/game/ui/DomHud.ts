@@ -1,6 +1,11 @@
 import { AERON } from '../content/aeron.ts';
 import { PLAYER_TUNING } from '../content/playerDefaults.ts';
-import { getEquippedSpellDefinition, getEquippedSpellState } from '../state/spellState.ts';
+import {
+	canCastEquippedSpell,
+	getEquippedSpellDefinition,
+	getEquippedSpellState,
+	getSpellCycleLabel,
+} from '../state/spellState.ts';
 import type { GameState } from '../types.ts';
 
 function $(id: string): HTMLElement {
@@ -15,12 +20,14 @@ export class DomHud {
 	private readonly noticeEl = $('notice');
 	private readonly hpEl = $('hp') as HTMLElement;
 	private readonly spEl = $('sp') as HTMLElement;
-	private readonly spellNameEl = $('spellName');
-	private readonly spellCastsEl = $('spellCasts');
-	private readonly flasksEl = $('flasks');
+	private readonly stateEl = $('state');
 	private readonly bossHpEl = $('bossHp') as HTMLElement;
 	private readonly phaseEl = $('phase');
-	private readonly stateEl = $('state');
+	private readonly slotSpellNameEl = $('slotSpellName');
+	private readonly slotSpellCastsEl = $('slotSpellCasts');
+	private readonly slotSpellIndexEl = $('slotSpellIndex');
+	private readonly slotFlasksEl = $('slotFlasks');
+	private readonly slotRightEl = $('slotRight');
 
 	announceWithTimer(state: GameState, message: string, duration = 2): void {
 		this.noticeEl.textContent = message;
@@ -41,11 +48,16 @@ export class DomHud {
 
 		this.hpEl.style.width = `${player.hp}%`;
 		this.spEl.style.width = `${player.sp}%`;
-		this.spellNameEl.textContent = spell.displayName.toUpperCase();
-		this.spellCastsEl.textContent = String(spellState.remainingCasts);
-		this.flasksEl.textContent = String(player.flasks);
 		this.bossHpEl.style.width = `${(boss.hp / boss.max) * 100}%`;
 		this.phaseEl.textContent = state.phase2 ? AERON.phases.phase2.label : AERON.phases.phase1.label;
+
+		this.slotSpellNameEl.textContent = spell.displayName;
+		this.slotSpellCastsEl.textContent = String(spellState.remainingCasts);
+		this.slotSpellIndexEl.textContent = getSpellCycleLabel(state);
+		this.slotFlasksEl.textContent = String(player.flasks);
+		this.slotRightEl.classList.toggle('is-charging', state.charging);
+		this.slotRightEl.classList.toggle('is-ready', canCastEquippedSpell(state));
+
 		this.stateEl.textContent = player.heal > 0
 			? 'DRINKING…'
 			: state.charging

@@ -1,4 +1,10 @@
-import { DEFAULT_EQUIPPED_SPELL, getSpellDefinition, SPELLS, type SpellId } from '../content/spells.ts';
+import {
+	DEFAULT_EQUIPPED_SPELL,
+	getSpellDefinition,
+	SPELL_CYCLE_ORDER,
+	SPELLS,
+	type SpellId,
+} from '../content/spells.ts';
 import type { GameState, SpellRuntimeState } from '../types.ts';
 
 export function createSpellRuntimeState(id: SpellId): SpellRuntimeState {
@@ -27,6 +33,14 @@ export function getEquippedSpellState(state: GameState): SpellRuntimeState {
 export function canCastEquippedSpell(state: GameState): boolean {
 	const spell = getEquippedSpellState(state);
 	return spell.remainingCasts > 0 && spell.cooldownRemaining <= 0;
+}
+
+export function cycleEquippedSpell(state: GameState): void {
+	const currentIndex = SPELL_CYCLE_ORDER.indexOf(state.equippedSpellId);
+	const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % SPELL_CYCLE_ORDER.length : 0;
+	state.equippedSpellId = SPELL_CYCLE_ORDER[nextIndex];
+	state.charging = false;
+	state.charge = 0;
 }
 
 /** Replenish spell charges at rest/checkpoints (entering the sanctum or retrying). */
@@ -58,4 +72,9 @@ export function consumeEquippedSpellCast(state: GameState): void {
 	spell.remainingCasts = Math.max(0, spell.remainingCasts - 1);
 	spell.cooldownRemaining = definition.cooldown;
 	state.player.cd = definition.cooldown;
+}
+
+export function getSpellCycleLabel(state: GameState): string {
+	const index = SPELL_CYCLE_ORDER.indexOf(state.equippedSpellId);
+	return `${index + 1}/${SPELL_CYCLE_ORDER.length}`;
 }

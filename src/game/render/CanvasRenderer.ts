@@ -70,11 +70,11 @@ export class CanvasRenderer {
 		drawHazards(ctx, state.hazards);
 
 		if (state.player.y < state.boss.y) {
-			drawKnight(ctx, state.player, false, state.time, state.phase2, state.player.swing);
-			drawKnight(ctx, state.boss, true, state.time, state.phase2, state.player.swing);
+			drawKnight(ctx, state.player, false, state.time, state.phase2);
+			drawKnight(ctx, state.boss, true, state.time, state.phase2);
 		} else {
-			drawKnight(ctx, state.boss, true, state.time, state.phase2, state.player.swing);
-			drawKnight(ctx, state.player, false, state.time, state.phase2, state.player.swing);
+			drawKnight(ctx, state.boss, true, state.time, state.phase2);
+			drawKnight(ctx, state.player, false, state.time, state.phase2);
 		}
 
 		if (state.charging) {

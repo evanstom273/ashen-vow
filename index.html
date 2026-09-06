@@ -3,6 +3,8 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+	<meta http-equiv="Pragma" content="no-cache">
 	<meta name="theme-color" content="#101513">
 	<title>Ashen Vow</title>
 </head>
@@ -19,18 +21,9 @@
 				<div class="sigil">✧</div>
 				<div class="bars">
 					<div class="bar health"><i id="hp"></i></div>
-					<div class="spell-charges">
-						<span id="spellName">ASHEN BOLT</span>
-						<strong id="spellCasts">8</strong>
-						<small>casts</small>
-					</div>
 					<div class="bar stamina"><i id="sp"></i></div>
 					<p id="state">UNBROKEN</p>
 				</div>
-			</div>
-			<div class="flask">
-				<span>✦</span>
-				<div><strong id="flasks">3</strong> <small>Crimson draught</small><kbd>E</kbd></div>
 			</div>
 		</section>
 		<div id="notice" aria-live="polite"></div>
@@ -44,21 +37,40 @@
 		<footer>
 			<span><kbd>W A S D</kbd> Move</span>
 			<span><kbd>SPACE</kbd> Dodge</span>
-			<span><kbd>J</kbd> Strike</span>
-			<span><kbd>K</kbd> Sorcery <em>limited casts</em></span>
-			<span><kbd>E</kbd> Heal</span>
+			<span><kbd>Q</kbd> Cycle spell</span>
+			<span><kbd>K</kbd> Right hand <em>hold to cast</em></span>
+			<span><kbd>E</kbd> Flask</span>
 			<span class="controller">Controller supported</span>
 		</footer>
+		<div id="actionSlots" class="slot-diamond" aria-label="Equipment slots">
+			<button type="button" class="slot slot-spell" data-action="cycleSpell" aria-label="Cycle spell">
+				<span class="slot-tag">Spell</span>
+				<span class="slot-title" id="slotSpellName">Ashen Bolt</span>
+				<strong class="slot-count" id="slotSpellCasts">8</strong>
+				<small class="slot-meta" id="slotSpellIndex">1/2</small>
+			</button>
+			<button type="button" class="slot slot-left" disabled aria-label="Left hand (empty)">
+				<span class="slot-tag">L</span>
+				<span class="slot-empty">—</span>
+			</button>
+			<button type="button" class="slot slot-right" id="slotRight" data-action="castStart" aria-label="Right hand cast">
+				<span class="slot-tag">R</span>
+				<span class="slot-title">Cast</span>
+				<small class="slot-meta">hold</small>
+			</button>
+			<button type="button" class="slot slot-consumable" data-action="useConsumable" aria-label="Use flask">
+				<span class="slot-tag">✦</span>
+				<span class="slot-title">Flask</span>
+				<strong class="slot-count" id="slotFlasks">3</strong>
+			</button>
+		</div>
 		<div id="touch">
-			<div class="move-stick" aria-label="Move">
-				<div class="move-stick-base"></div>
-				<div class="move-stick-knob"></div>
-			</div>
-			<div class="actions">
-				<button type="button" class="touch-btn touch-btn-dodge" data-key=" " aria-label="Dodge">Dodge</button>
-				<button type="button" class="touch-btn touch-btn-strike" data-key="j" aria-label="Strike">Strike</button>
-				<button type="button" class="touch-btn touch-btn-cast" data-key="k" aria-label="Cast sorcery">Cast</button>
-				<button type="button" class="touch-btn touch-btn-heal" data-key="e" aria-label="Heal">Heal</button>
+			<div class="touch-left">
+				<div class="move-stick" aria-label="Move">
+					<div class="move-stick-base"></div>
+					<div class="move-stick-knob"></div>
+				</div>
+				<button type="button" class="touch-dodge" data-action="dodge" aria-label="Dodge">Roll</button>
 			</div>
 		</div>
 		<section id="overlay">
@@ -68,7 +80,7 @@
 				<p id="description">Beyond the fog, the last king keeps his watch.<br>Learn his rhythm. Find your opening.</p>
 				<button id="begin">ENTER THE SANCTUM <span>→</span></button>
 				<div class="tip" id="tip">Death is a lesson. Return as often as it takes.</div>
-				<div class="startControls">WASD / left stick / touch joystick · Move &nbsp; Space · Dodge &nbsp; J · Strike<br>K · Sorcery (hold to charge, limited casts) &nbsp; E · Heal<br><small>Gamepad: left stick · B / ○ dodge · R1 strike · R2 cast · X / □ heal</small></div>
+				<div class="startControls">WASD / stick · Move &nbsp; Space · Dodge &nbsp; Q · Cycle spell<br>K · Right hand (hold to cast) &nbsp; E · Flask<br><small>Gamepad: stick · B / ○ dodge · L1 cycle · R2 cast · X / □ flask</small></div>
 			</div>
 		</section>
 	</main>
