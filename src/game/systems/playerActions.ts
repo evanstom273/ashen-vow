@@ -1,4 +1,9 @@
 import { PLAYER_TUNING } from '../content/playerDefaults.ts';
+import {
+	canCastEquippedSpell,
+	consumeEquippedSpellCast,
+	getEquippedSpellDefinition,
+} from '../state/spellState.ts';
 import { spawnBurst } from '../effects/particles.ts';
 import type { ActionKey, GameState, StickInput } from '../types.ts';
 import { hitBoss, isPlayerInMeleeRange, type CombatContext } from './combat.ts';
@@ -44,7 +49,7 @@ export function handleAction(ctx: PlayerActionContext, key: ActionKey): void {
 		audio.play(280, 0.12, 'sawtooth', 0.02);
 	}
 
-	if (key === 'k' && player.cd <= 0 && player.roll <= 0 && player.heal <= 0 && player.fp >= PLAYER_TUNING.sorcery.basicFocusCost) {
+	if (key === 'k' && player.cd <= 0 && player.roll <= 0 && player.heal <= 0 && canCastEquippedSpell(state)) {
 		state.charging = true;
 		state.charge = 0;
 	}
@@ -65,18 +70,18 @@ export function castSorcery(ctx: CombatContext): void {
 	if (!state.charging) return;
 
 	state.charging = false;
-	if (state.mode !== 'play' || state.player.fp < PLAYER_TUNING.sorcery.basicFocusCost) return;
+	if (state.mode !== 'play' || !canCastEquippedSpell(state)) return;
 
-	const powered = state.charge > PLAYER_TUNING.sorcery.chargeThreshold && state.player.fp >= PLAYER_TUNING.sorcery.chargedFocusCost;
-	state.player.fp -= powered ? PLAYER_TUNING.sorcery.chargedFocusCost : PLAYER_TUNING.sorcery.basicFocusCost;
-	state.player.cd = PLAYER_TUNING.sorcery.cooldown;
+	const spell = getEquippedSpellDefinition(state);
+	const powered = state.charge > spell.chargeThreshold;
+	consumeEquippedSpellCast(state);
 	const angle = Math.atan2(state.boss.y - state.player.y, state.boss.x - state.player.x);
 	state.shots.push({
 		x: state.player.x,
 		y: state.player.y,
-		vx: Math.cos(angle) * PLAYER_TUNING.sorcery.projectileSpeed,
-		vy: Math.sin(angle) * PLAYER_TUNING.sorcery.projectileSpeed,
-		t: PLAYER_TUNING.sorcery.projectileLifetime,
+		vx: Math.cos(angle) * spell.projectileSpeed,
+		vy: Math.sin(angle) * spell.projectileSpeed,
+		t: spell.projectileLifetime,
 		powered,
 	});
 	state.charge = 0;
@@ -93,7 +98,6 @@ export function updatePlayerRegen(state: GameState, dt: number): void {
 	if (player.regen <= 0 && player.roll <= 0 && !state.charging) {
 		player.sp = Math.min(100, player.sp + PLAYER_TUNING.regen.staminaPerSecond * dt);
 	}
-	player.fp = Math.min(100, player.fp + PLAYER_TUNING.regen.focusPerSecond * dt);
 }
 
 export function updatePlayerHealing(ctx: CombatContext, dt: number): void {
@@ -113,7 +117,8 @@ export function updatePlayerHealing(ctx: CombatContext, dt: number): void {
 export function updateSorceryCharge(state: GameState, dt: number): void {
 	if (!state.charging) return;
 
-	state.charge = Math.min(PLAYER_TUNING.sorcery.maxCharge, state.charge + dt);
+	const spell = getEquippedSpellDefinition(state);
+	state.charge = Math.min(spell.maxCharge, state.charge + dt);
 	if (Math.random() < 0.5) {
 		spawnBurst(state, state.player.x, state.player.y, '#83cdd5', 1, 25);
 	}
@@ -122,6 +127,7 @@ export function updateSorceryCharge(state: GameState, dt: number): void {
 export function updatePlayerMovement(state: GameState, movement: StickInput, dt: number): void {
 	const { player } = state;
 	const length = Math.hypot(movement.x, movement.y);
+	const spell = getEquippedSpellDefinition(state);
 
 	if (player.roll > 0) {
 		player.roll -= dt;
@@ -132,7 +138,7 @@ export function updatePlayerMovement(state: GameState, movement: StickInput, dt:
 		const speed = player.heal > 0
 			? PLAYER_TUNING.movement.healingSpeed
 			: state.charging
-				? PLAYER_TUNING.movement.chargingSpeed
+				? spell.chargingMoveSpeed
 				: PLAYER_TUNING.movement.normalSpeed;
 		player.x += (movement.x / Math.max(1, length)) * speed * dt;
 		player.y += (movement.y / Math.max(1, length)) * speed * dt;

@@ -1,3 +1,5 @@
+import type { SpellId } from './content/spells.ts';
+
 export type GameMode = 'title' | 'play' | 'pause' | 'dead' | 'win';
 
 export type BossFsmState = 'idle' | 'windup' | 'attack' | 'recover';
@@ -22,7 +24,6 @@ export interface PlayerState {
 	x: number;
 	y: number;
 	hp: number;
-	fp: number;
 	sp: number;
 	flasks: number;
 	angle: number;
@@ -98,6 +99,11 @@ export interface Viewport {
 	oy: number;
 }
 
+export interface SpellRuntimeState {
+	remainingCasts: number;
+	cooldownRemaining: number;
+}
+
 export interface GameState {
 	mode: GameMode;
 	attempts: number;
@@ -107,6 +113,8 @@ export interface GameState {
 	shots: Shot[];
 	particles: Particle[];
 	hazards: Hazard[];
+	equippedSpellId: SpellId;
+	spells: Record<SpellId, SpellRuntimeState>;
 	charge: number;
 	charging: boolean;
 	shake: number;

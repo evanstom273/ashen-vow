@@ -16,6 +16,7 @@ import {
 } from './systems/playerActions.ts';
 import { updateProjectiles } from './systems/projectiles.ts';
 import { createInitialGameState, createInitialInputState, resetCombatState } from './state/createState.ts';
+import { updateSpellCooldowns } from './state/spellState.ts';
 import { DomHud } from './ui/DomHud.ts';
 import { OverlayController } from './ui/OverlayController.ts';
 import type { ActionKey, GameState, InputState } from './types.ts';
@@ -143,6 +144,7 @@ export class Game {
 		updatePlayerRegen(this.state, dt);
 		updatePlayerHealing(this.combatContext, dt);
 		updateSorceryCharge(this.state, dt);
+		updateSpellCooldowns(this.state, dt);
 
 		const movement = this.input.getMovementInput();
 		updatePlayerMovement(this.state, movement, dt);

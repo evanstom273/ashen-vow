@@ -1,5 +1,6 @@
 import { AERON } from '../content/aeron.ts';
 import { PLAYER_TUNING } from '../content/playerDefaults.ts';
+import { getEquippedSpellDefinition, getEquippedSpellState } from '../state/spellState.ts';
 import type { GameState } from '../types.ts';
 
 function $(id: string): HTMLElement {
@@ -13,8 +14,9 @@ function $(id: string): HTMLElement {
 export class DomHud {
 	private readonly noticeEl = $('notice');
 	private readonly hpEl = $('hp') as HTMLElement;
-	private readonly fpEl = $('fp') as HTMLElement;
 	private readonly spEl = $('sp') as HTMLElement;
+	private readonly spellNameEl = $('spellName');
+	private readonly spellCastsEl = $('spellCasts');
 	private readonly flasksEl = $('flasks');
 	private readonly bossHpEl = $('bossHp') as HTMLElement;
 	private readonly phaseEl = $('phase');
@@ -34,20 +36,28 @@ export class DomHud {
 
 	sync(state: GameState): void {
 		const { player, boss } = state;
+		const spell = getEquippedSpellDefinition(state);
+		const spellState = getEquippedSpellState(state);
+
 		this.hpEl.style.width = `${player.hp}%`;
-		this.fpEl.style.width = `${player.fp}%`;
 		this.spEl.style.width = `${player.sp}%`;
+		this.spellNameEl.textContent = spell.displayName.toUpperCase();
+		this.spellCastsEl.textContent = String(spellState.remainingCasts);
 		this.flasksEl.textContent = String(player.flasks);
 		this.bossHpEl.style.width = `${(boss.hp / boss.max) * 100}%`;
 		this.phaseEl.textContent = state.phase2 ? AERON.phases.phase2.label : AERON.phases.phase1.label;
 		this.stateEl.textContent = player.heal > 0
 			? 'DRINKING…'
 			: state.charging
-				? state.charge > PLAYER_TUNING.sorcery.chargeThreshold
+				? state.charge > spell.chargeThreshold
 					? 'SORCERY CHARGED'
 					: 'GATHERING LIGHT'
-				: player.sp < PLAYER_TUNING.staminaLowThreshold
-					? 'STAMINA LOW'
-					: 'UNBROKEN';
+				: spellState.remainingCasts <= 0
+					? 'NO CASTS REMAIN'
+					: spellState.cooldownRemaining > 0
+						? 'SORCERY COOLING'
+						: player.sp < PLAYER_TUNING.staminaLowThreshold
+							? 'STAMINA LOW'
+							: 'UNBROKEN';
 	}
 }
