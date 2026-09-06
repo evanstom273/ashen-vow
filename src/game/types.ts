@@ -1,3 +1,4 @@
+import type { EffectId } from './content/effects.ts';
 import type { SpellId } from './content/spells.ts';
 
 export type GameMode = 'title' | 'play' | 'pause' | 'dead' | 'win';
@@ -37,10 +38,21 @@ export interface PlayerState {
 	dy: number;
 }
 
+export interface ActiveEffect {
+	effectId: EffectId;
+	remainingDuration: number;
+	tickTimer: number;
+	/** Snapshot of max-HP reduction applied by this instance. */
+	appliedMaxReduction: number;
+}
+
 export interface BossState {
 	x: number;
 	y: number;
 	hp: number;
+	/** Permanent maximum from content — never modified by transient effects. */
+	baseMax: number;
+	/** Effective maximum — may be reduced temporarily by status effects. */
 	max: number;
 	angle: number;
 	state: BossFsmState;
@@ -50,6 +62,7 @@ export interface BossState {
 	combo: number;
 	tx: number;
 	ty: number;
+	effects: ActiveEffect[];
 }
 
 export interface Shot {
@@ -58,6 +71,7 @@ export interface Shot {
 	vx: number;
 	vy: number;
 	t: number;
+	spellId: SpellId;
 	powered: boolean;
 }
 

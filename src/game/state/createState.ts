@@ -20,6 +20,7 @@ export function createBossState(): BossState {
 		x: AERON.spawn.x,
 		y: AERON.spawn.y,
 		hp: AERON.maxHp,
+		baseMax: AERON.maxHp,
 		max: AERON.maxHp,
 		angle: Math.PI / 2,
 		state: 'idle',
@@ -29,6 +30,7 @@ export function createBossState(): BossState {
 		combo: 0,
 		tx: 0,
 		ty: 0,
+		effects: [],
 	};
 }
 

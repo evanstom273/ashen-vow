@@ -1,10 +1,12 @@
-import { PLAYER_TUNING } from '../content/playerDefaults.ts';
+import { isSpellCharged } from '../content/spells.ts';
+import { spawnSpellCastBurst, spawnSpellChargeParticles } from '../render/spellVisualRenderer.ts';
 import {
 	canCastEquippedSpell,
 	consumeEquippedSpellCast,
 	cycleEquippedSpell,
 	getEquippedSpellDefinition,
 } from '../state/spellState.ts';
+import { PLAYER_TUNING } from '../content/playerDefaults.ts';
 import { spawnBurst } from '../effects/particles.ts';
 import type { GameState, PlayerAction, StickInput } from '../types.ts';
 import type { CombatContext } from './combat.ts';
@@ -67,17 +69,19 @@ export function releaseCast(ctx: CombatContext): void {
 	if (state.mode !== 'play' || !canCastEquippedSpell(state)) return;
 
 	const spell = getEquippedSpellDefinition(state);
-	const powered = state.charge > spell.chargeThreshold;
+	const powered = isSpellCharged(spell, state.charge);
 	consumeEquippedSpellCast(state);
 	const angle = Math.atan2(state.boss.y - state.player.y, state.boss.x - state.player.x);
 	state.shots.push({
 		x: state.player.x,
 		y: state.player.y,
-		vx: Math.cos(angle) * spell.projectileSpeed,
-		vy: Math.sin(angle) * spell.projectileSpeed,
-		t: spell.projectileLifetime,
+		vx: Math.cos(angle) * spell.projectile.speed,
+		vy: Math.sin(angle) * spell.projectile.speed,
+		t: spell.projectile.lifetime,
+		spellId: spell.id,
 		powered,
 	});
+	spawnSpellCastBurst(state, state.player.x, state.player.y, spell.visual);
 	state.charge = 0;
 	audio.play(powered ? 600 : 800, 0.3, 'sine', 0.04);
 }
@@ -111,10 +115,8 @@ export function updateSorceryCharge(state: GameState, dt: number): void {
 	if (!state.charging) return;
 
 	const spell = getEquippedSpellDefinition(state);
-	state.charge = Math.min(spell.maxCharge, state.charge + dt);
-	if (Math.random() < 0.5) {
-		spawnBurst(state, state.player.x, state.player.y, '#83cdd5', 1, 25);
-	}
+	state.charge = Math.min(spell.charge.maxCharge, state.charge + dt);
+	spawnSpellChargeParticles(state, state.player.x, state.player.y, spell.visual);
 }
 
 export function updatePlayerMovement(state: GameState, movement: StickInput, dt: number): void {
@@ -131,7 +133,7 @@ export function updatePlayerMovement(state: GameState, movement: StickInput, dt:
 		const speed = player.heal > 0
 			? PLAYER_TUNING.movement.healingSpeed
 			: state.charging
-				? spell.chargingMoveSpeed
+				? spell.charge.chargingMoveSpeed
 				: PLAYER_TUNING.movement.normalSpeed;
 		player.x += (movement.x / Math.max(1, length)) * speed * dt;
 		player.y += (movement.y / Math.max(1, length)) * speed * dt;

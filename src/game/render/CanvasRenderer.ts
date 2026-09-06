@@ -6,6 +6,7 @@ import {
 	drawBossTelegraph,
 	drawHazards,
 } from './drawArena.ts';
+import { getEquippedSpellDefinition } from '../state/spellState.ts';
 import {
 	drawChargeRing,
 	drawKnight,
@@ -78,10 +79,11 @@ export class CanvasRenderer {
 		}
 
 		if (state.charging) {
-			drawChargeRing(ctx, state.player.x, state.player.y, state.charge);
+			const spell = getEquippedSpellDefinition(state);
+			drawChargeRing(ctx, state.player.x, state.player.y, state.charge, spell.visual);
 		}
 
-		drawProjectiles(ctx, state.shots);
+		drawProjectiles(ctx, state.shots, state.time);
 		drawParticles(ctx, state.particles);
 		drawAtmosphericDust(ctx, state.time);
 

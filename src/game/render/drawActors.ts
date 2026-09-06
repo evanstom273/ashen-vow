@@ -1,4 +1,7 @@
-import type { BossState, PlayerState } from '../types.ts';
+import { getSpellDefinition } from '../content/spells.ts';
+import type { SpellVisualProfile } from '../content/spellVisuals.ts';
+import type { BossState, PlayerState, Shot } from '../types.ts';
+import { drawSpellChargeRing, drawSpellProjectile } from './spellVisualRenderer.ts';
 import { drawCircle, drawLine } from './primitives.ts';
 
 export function drawKnight(
@@ -77,12 +80,10 @@ export function drawKnight(
 	ctx.restore();
 }
 
-export function drawProjectiles(ctx: CanvasRenderingContext2D, shots: { x: number; y: number; powered: boolean }[]): void {
+export function drawProjectiles(ctx: CanvasRenderingContext2D, shots: Shot[], time: number): void {
 	for (const shot of shots) {
-		ctx.shadowColor = '#9be9f2';
-		ctx.shadowBlur = 20;
-		drawCircle(ctx, shot.x, shot.y, shot.powered ? 9 : 5, '#d6ffff');
-		ctx.shadowBlur = 0;
+		const spell = getSpellDefinition(shot.spellId);
+		drawSpellProjectile(ctx, shot, spell.visual, time);
 	}
 }
 
@@ -97,6 +98,12 @@ export function drawParticles(
 	ctx.globalAlpha = 1;
 }
 
-export function drawChargeRing(ctx: CanvasRenderingContext2D, x: number, y: number, charge: number): void {
-	drawCircle(ctx, x, y, 22 + charge * 8, null, '#a4e1dfaa', 2);
+export function drawChargeRing(
+	ctx: CanvasRenderingContext2D,
+	x: number,
+	y: number,
+	charge: number,
+	visual: SpellVisualProfile,
+): void {
+	drawSpellChargeRing(ctx, x, y, charge, visual);
 }
