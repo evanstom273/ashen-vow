@@ -107,7 +107,7 @@ export function updateBoss(ctx: BossUpdateContext, dt: number): void {
 
 	boss.flash -= dt;
 
-	if (boss.hp < boss.max * AERON.phaseThreshold && !state.phase2) {
+	if (boss.hp < boss.baseMax * AERON.phaseThreshold && !state.phase2) {
 		triggerPhaseTransition(ctx);
 	}
 

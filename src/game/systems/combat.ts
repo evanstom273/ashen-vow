@@ -1,4 +1,4 @@
-import { ARENA, ARENA_BOUNDARY_INSET, dist } from '../constants.ts';
+import { ARENA, ARENA_BOUNDARY_INSET, clamp, dist } from '../constants.ts';
 import { PLAYER_TUNING } from '../content/playerDefaults.ts';
 import type { DamageType } from '../content/effects.ts';
 import { spawnBurst } from '../effects/particles.ts';
@@ -90,6 +90,36 @@ export function isPlayerInBlast(state: GameState, x: number, y: number, radius: 
 	return Math.hypot(state.player.x - x, state.player.y - y) < radius;
 }
 
-export function isProjectileHit(state: GameState, shotX: number, shotY: number, hitRadius: number): boolean {
-	return dist({ x: shotX, y: shotY }, state.boss) < hitRadius;
+function isPointInBossHitRadius(state: GameState, x: number, y: number, hitRadius: number): boolean {
+	return dist({ x, y }, state.boss) < hitRadius;
+}
+
+/** Swept segment test — avoids fast projectiles skipping the boss in one frame. */
+export function isProjectileHit(
+	state: GameState,
+	prevX: number,
+	prevY: number,
+	x: number,
+	y: number,
+	hitRadius: number,
+): boolean {
+	if (isPointInBossHitRadius(state, x, y, hitRadius)) {
+		return true;
+	}
+	if (isPointInBossHitRadius(state, prevX, prevY, hitRadius)) {
+		return true;
+	}
+
+	const { boss } = state;
+	const dx = x - prevX;
+	const dy = y - prevY;
+	const lengthSq = dx * dx + dy * dy;
+	if (lengthSq <= 0) {
+		return false;
+	}
+
+	const t = clamp(((boss.x - prevX) * dx + (boss.y - prevY) * dy) / lengthSq, 0, 1);
+	const closestX = prevX + dx * t;
+	const closestY = prevY + dy * t;
+	return dist({ x: closestX, y: closestY }, boss) < hitRadius;
 }
