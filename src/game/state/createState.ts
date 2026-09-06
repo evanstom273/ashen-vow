@@ -54,6 +54,7 @@ export function createInitialInputState(): InputState {
 		keys: {},
 		padPrev: {},
 		stick: { x: 0, y: 0 },
+		touchStick: { x: 0, y: 0 },
 	};
 }
 

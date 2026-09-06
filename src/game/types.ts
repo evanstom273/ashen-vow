@@ -126,4 +126,5 @@ export interface InputState {
 	keys: Record<string, boolean>;
 	padPrev: Record<string, boolean>;
 	stick: StickInput;
+	touchStick: StickInput;
 }

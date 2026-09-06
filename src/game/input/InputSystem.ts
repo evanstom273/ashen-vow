@@ -1,4 +1,5 @@
 import type { ActionKey, GameMode, InputState, StickInput } from '../types.ts';
+import { TouchControls } from './TouchControls.ts';
 
 export type ActionHandler = (key: ActionKey) => void;
 export type CastHandler = () => void;
@@ -18,6 +19,7 @@ export class InputSystem {
 	private readonly onCast: CastHandler;
 	private readonly getMode: () => GameMode;
 	private readonly onStartFromMenu: StartHandler;
+	private touchControls: TouchControls | null = null;
 
 	constructor(
 		input: InputState,
@@ -55,28 +57,23 @@ export class InputSystem {
 
 		addEventListener('blur', () => {
 			this.input.keys = {};
+			this.touchControls?.reset();
+			this.input.touchStick = { x: 0, y: 0 };
 		});
 	}
 
 	bindTouch(): void {
-		document.querySelectorAll<HTMLButtonElement>('[data-key]').forEach((button) => {
-			button.onpointerdown = (event) => {
-				event.preventDefault();
-				button.setPointerCapture(event.pointerId);
-				const key = button.dataset.key;
-				if (!key) return;
-				this.input.keys[key] = true;
-				this.onAction(key as ActionKey);
-			};
-			button.onpointerup = button.onpointercancel = () => {
-				const key = button.dataset.key;
-				if (!key) return;
-				this.input.keys[key] = false;
-				if (key === 'k') {
-					this.onCast();
-				}
-			};
-		});
+		const root = document.getElementById('touch');
+		if (!root) return;
+
+		this.touchControls = new TouchControls(
+			root,
+			(stick) => {
+				this.input.touchStick = stick;
+			},
+			(key) => this.onAction(key),
+			() => this.onCast(),
+		);
 	}
 
 	pollGamepad(): StickInput {
@@ -113,14 +110,16 @@ export class InputSystem {
 	}
 
 	getMovementInput(): StickInput {
-		const { keys, stick } = this.input;
+		const { keys, stick, touchStick } = this.input;
 		return {
-			x: (keys.d || keys.ArrowRight ? 1 : 0) - (keys.a || keys.ArrowLeft ? 1 : 0) + stick.x,
-			y: (keys.s || keys.ArrowDown ? 1 : 0) - (keys.w || keys.ArrowUp ? 1 : 0) + stick.y,
+			x: (keys.d || keys.ArrowRight ? 1 : 0) - (keys.a || keys.ArrowLeft ? 1 : 0) + stick.x + touchStick.x,
+			y: (keys.s || keys.ArrowDown ? 1 : 0) - (keys.w || keys.ArrowUp ? 1 : 0) + stick.y + touchStick.y,
 		};
 	}
 
 	clearKeys(): void {
 		this.input.keys = {};
+		this.input.touchStick = { x: 0, y: 0 };
+		this.touchControls?.reset();
 	}
 }
