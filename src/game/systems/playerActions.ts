@@ -9,6 +9,7 @@ import {
 import { PLAYER_TUNING } from '../content/playerDefaults.ts';
 import { spawnBurst } from '../effects/particles.ts';
 import type { GameState, PlayerAction, StickInput } from '../types.ts';
+import { getLockOnTargetPosition } from './lockOn.ts';
 import type { CombatContext } from './combat.ts';
 
 export interface PlayerActionContext extends CombatContext {
@@ -71,7 +72,8 @@ export function releaseCast(ctx: CombatContext): void {
 	const spell = getEquippedSpellDefinition(state);
 	const powered = isSpellCharged(spell, state.charge);
 	consumeEquippedSpellCast(state);
-	const angle = Math.atan2(state.boss.y - state.player.y, state.boss.x - state.player.x);
+	const target = getLockOnTargetPosition(state) ?? state.boss;
+	const angle = Math.atan2(target.y - state.player.y, target.x - state.player.x);
 	state.shots.push({
 		x: state.player.x,
 		y: state.player.y,

@@ -10,7 +10,11 @@
 		"preview": "vite preview --base /ashen-vow/"
 	},
 	"devDependencies": {
+		"@types/three": "^0.185.4",
 		"typescript": "^5.9.2",
 		"vite": "^7.1.5"
+	},
+	"dependencies": {
+		"three": "^0.185.1"
 	}
 }

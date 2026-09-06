@@ -1,5 +1,6 @@
 import { PLAYER_START } from '../content/playerDefaults.ts';
 import { AERON } from '../content/aeron.ts';
+import { clearLockOn } from '../systems/lockOn.ts';
 import { initializeSpellLoadout, replenishSpellsAtRest } from './spellState.ts';
 import type { BossState, GameState, InputState, PlayerState } from '../types.ts';
 
@@ -51,6 +52,7 @@ export function createInitialGameState(): GameState {
 		shake: 0,
 		noticeTime: 0,
 		phase2: false,
+		lockOn: { active: false, targetId: null },
 	};
 	initializeSpellLoadout(state);
 	return state;
@@ -76,5 +78,6 @@ export function resetCombatState(state: GameState): void {
 	state.charging = false;
 	state.noticeTime = 0;
 	state.shake = 0;
+	clearLockOn(state);
 	replenishSpellsAtRest(state);
 }

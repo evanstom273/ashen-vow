@@ -2,7 +2,9 @@ import { MAX_DELTA_TIME } from './constants.ts';
 import { AudioManager } from './audio/AudioManager.ts';
 import { decayShake, updateParticles } from './effects/particles.ts';
 import { InputSystem } from './input/InputSystem.ts';
-import { CanvasRenderer } from './render/CanvasRenderer.ts';
+import type { GameRenderer } from './render/GameRenderer.ts';
+import { transformMovementForCamera } from './render/three/worldMapping.ts';
+import { activateBossLockOn } from './systems/lockOn.ts';
 import { updateBoss } from './systems/bossUpdate.ts';
 import { constrainToArena, type CombatContext } from './systems/combat.ts';
 import { updateHazards } from './systems/hazards.ts';
@@ -28,12 +30,15 @@ export class Game {
 	private readonly audio = new AudioManager();
 	private readonly hud = new DomHud();
 	private readonly overlay = new OverlayController();
-	private readonly renderer: CanvasRenderer;
+	private readonly renderer: GameRenderer;
 	private readonly input: InputSystem;
 	private lastFrameTime = 0;
 
-	constructor(canvas: HTMLCanvasElement) {
-		this.renderer = new CanvasRenderer(canvas);
+	private readonly cameraRelativeMovement: boolean;
+
+	constructor(_canvas: HTMLCanvasElement, renderer: GameRenderer, cameraRelativeMovement = true) {
+		this.renderer = renderer;
+		this.cameraRelativeMovement = cameraRelativeMovement;
 		this.input = new InputSystem(
 			this.inputState,
 			(action) => this.onAction(action),
@@ -84,6 +89,7 @@ export class Game {
 		this.state.attempts += 1;
 		this.state.mode = 'play';
 		this.overlay.setPlaying(true);
+		activateBossLockOn(this.state);
 		this.announce('THE LAST WATCH', 2.5);
 	}
 
@@ -118,12 +124,17 @@ export class Game {
 		}, 1000);
 	}
 
+	private getMovementInput() {
+		const raw = this.input.getMovementInput();
+		return this.cameraRelativeMovement ? transformMovementForCamera(raw) : raw;
+	}
+
 	private onAction(action: PlayerAction): void {
 		handlePlayerAction(
 			{
 				...this.combatContext,
 				onPause: () => this.togglePause(),
-				getMovementInput: () => this.input.getMovementInput(),
+				getMovementInput: () => this.getMovementInput(),
 			},
 			action,
 		);
@@ -147,7 +158,7 @@ export class Game {
 		updateSorceryCharge(this.state, dt);
 		updateSpellCooldowns(this.state, dt);
 
-		const movement = this.input.getMovementInput();
+		const movement = this.getMovementInput();
 		updatePlayerMovement(this.state, movement, dt);
 		constrainToArena(this.state.player);
 
