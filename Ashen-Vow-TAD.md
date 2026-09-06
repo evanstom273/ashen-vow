@@ -1,37 +1,72 @@
 # Ashen Vow — Technical Architecture Document
 
-**Version:** 0.1  
-**Runtime:** Browser JavaScript, HTML5 Canvas, CSS  
-**Deployment:** Static Site hosted by ChatGPT Sites
+**Version:** 0.2  
+**Runtime:** Vite, TypeScript, HTML5 Canvas, CSS  
+**Deployment:** GitHub Pages (static build from `dist/`)
 
 ## Architecture overview
-Ashen Vow is a single page, client-side game. `index.html` defines the HUD, start/death/pause overlays, touch controls, and canvas. `style.css` defines the responsive dark fantasy presentation. `game.js` owns all simulation, input, rendering, audio, and UI synchronisation.
+
+Ashen Vow is a single-page, client-side, canvas-first game. `index.html` defines the HUD shell, overlays, touch controls, and canvas. `src/style.css` defines responsive presentation. TypeScript modules under `src/game/` own simulation, input, rendering, audio, and DOM synchronisation.
 
 ```text
 index.html
- ├─ style.css       responsive layout and visual tokens
- └─ game.js
-     ├─ input adapters (keyboard, touch, Gamepad API)
-     ├─ simulation state and update loop
-     ├─ combat and collision rules
-     ├─ particle/hazard effects
-     ├─ Canvas renderer
-     └─ HUD/overlay synchronisation
+ └─ src/main.ts
+     ├─ style.css
+     └─ game/
+         ├─ Game.ts                 loop orchestration, modes, lifecycle
+         ├─ types.ts                domain interfaces
+         ├─ constants.ts            world/arena helpers
+         ├─ content/              typed balance and boss definitions
+         ├─ state/                  create/reset factories
+         ├─ input/                  keyboard, touch, gamepad adapters
+         ├─ systems/                combat, player, boss, projectiles, hazards
+         ├─ effects/                particles and shake decay
+         ├─ render/                 Canvas 2D renderer
+         ├─ audio/                  Web Audio wrapper
+         └─ ui/                     DOM HUD and overlay controllers
 ```
 
+The game loop and simulation state remain independent of DOM rendering. HUD elements are updated from simulation state each frame; they are not the authoritative source of gameplay state.
+
 ## Runtime model
-The browser calls `requestAnimationFrame(frame)`. Each frame computes a clamped delta time, updates the simulation, renders the arena, and repeats. Simulation coordinates use a 1000 × 740 world space centred on the arena. Rendering translates and scales this world space to the viewport, preserving the same combat geometry on desktop and mobile.
+
+`Game` bootstraps input bindings, audio initialisation, and a `requestAnimationFrame` loop. Each frame computes clamped delta time, updates simulation (unless paused), renders the arena, and repeats. Simulation coordinates use a ~1100 × 850 world space centred on the arena. Rendering translates and scales this world space to the viewport.
+
+## Tooling
+
+| Command | Purpose |
+|---|---|
+| `npm install` | install dev dependencies (Vite, TypeScript) |
+| `npm run dev` | Vite dev server with HMR |
+| `npm run build` | typecheck (`tsc`) then Vite production build to `dist/` |
+| `npm run typecheck` | TypeScript checking only |
+| `npm run preview` | serve the production build locally |
+
+Dependencies are intentionally minimal: Vite and TypeScript only.
 
 ## State
+
 Top-level state includes:
 
-- `mode`: title, play, pause, dead, or win.
-- `player`: position, health, focus, stamina, flasks, facing, roll, invulnerability, cooldowns, healing, and charge state.
-- `boss`: position, health, facing, finite-state-machine state, attack timer, attack target, combo counter, and phase flash.
-- `shots`: active sorcery projectiles.
-- `hazards`: temporary blast and expanding ring hazards.
-- `particles`: short-lived visual effects.
-- `phase2`: whether the boss has crossed the 50% health threshold.
+- `mode`: title, play, pause, dead, or win
+- `player`: position, health, focus, stamina, flasks, facing, roll, invulnerability, cooldowns, healing, and charge-related timers
+- `boss`: position, health, facing, finite-state-machine state, attack timer, attack target, combo counter, and phase flash
+- `shots`: active sorcery projectiles
+- `hazards`: temporary blast and expanding ring hazards
+- `particles`: short-lived visual effects
+- `phase2`: whether the boss has crossed the 50% health threshold
+
+State is created via `createInitialGameState()` and reset via `resetCombatState()` when a new attempt begins.
+
+## Content separation
+
+Hardcoded prototype values are grouped under `src/game/content/`:
+
+- `playerDefaults.ts` — player starting stats and action tuning
+- `aeron.ts` — Aeron boss stats, phase labels, and attack definitions
+- `arena.ts` — arena geometry constants
+
+Systems in `src/game/systems/` execute behaviour using this data. Adding another boss or attack pattern should primarily mean adding content definitions and wiring selection logic, not rewriting combat primitives.
 
 ## Boss finite-state machine
 
@@ -44,52 +79,81 @@ idle → windup → attack → recover → idle
 `idle` approaches the player and selects an attack when its timer expires. `windup` exposes the attack telegraph and stores the relevant target position. `attack` applies damage and movement. `recover` gives the player a punish window. Phase transition temporarily uses the recover state while the radial effect is emitted.
 
 ## Input architecture
-Keyboard events map physical keys to logical actions. Touch buttons use pointer events and feed the same action functions. The Gamepad API is polled every update; axes feed movement and button edges trigger actions. This keeps combat rules independent from the input device.
 
-Logical action functions are:
+`InputSystem` maps keyboard, touch, and Gamepad API input into logical action keys consumed by player/combat systems:
 
-- `action(key)`: handles dodge, strike, cast start, heal, and pause.
-- `cast()`: converts a held cast into a basic or charged projectile.
-- `moveInput()`: combines keyboard, arrow, touch, and stick movement.
+- `handleAction(key)` — dodge, strike, cast start, heal, pause
+- `castSorcery()` — converts a held cast into a basic or charged projectile
+- `getMovementInput()` — combines keyboard, arrow, touch, and stick movement
+
+Gameplay systems do not depend on which physical device triggered an action.
 
 ## Combat rules
-All combat is real-time and distance based. Melee checks the player-to-boss distance at the moment of the swing. Projectiles move with velocity and check distance to the boss each update. Damage is blocked while `player.inv > 0`. Arena containment clamps both actors to the circular boundary. Temporary hazards check the player against their current radius.
+
+All combat is real-time and distance based. Melee checks player-to-boss distance at swing time. Projectiles move with velocity and check distance to the boss each update. Damage is blocked while `player.inv > 0`. Arena containment clamps both actors to the circular boundary. Ring hazards compare the player's distance to an expanding radius.
 
 ## Rendering
-Canvas 2D renders the following layers in order:
 
-1. Full-screen background and vignette.
-2. Radial arena and masonry tiles.
-3. Arena rings, radial seams, pillars, fog gate, and lamps.
-4. Boss telegraphs and active hazards.
-5. Actors, weapons, projectiles, and particles.
-6. Atmospheric dust and screen shake.
+`CanvasRenderer` draws layers in the same order as the original prototype:
 
-The player and boss are stylised procedural canvas shapes rather than external image assets. This keeps the prototype portable and avoids loading or licensing dependencies.
+1. Full-screen background and vignette
+2. Radial arena and masonry tiles
+3. Arena rings, radial seams, pillars, fog gate, and lamps
+4. Boss telegraphs and active hazards
+5. Actors, weapons, projectiles, and particles
+6. Atmospheric dust and screen shake
+
+Actors remain procedural Canvas shapes rather than external image assets.
 
 ## UI integration
-The HUD is updated directly from simulation state at the end of each update: health, focus, stamina, flask count, status text, boss health, and phase text. Body classes control title/play visibility. Overlay copy changes for pause, death, and victory.
+
+`DomHud` updates health, focus, stamina, flask count, status text, boss health, and phase text from simulation state. `OverlayController` manages title/pause/death/victory copy and the `body.playing` class. Plain DOM/CSS is used throughout; no component framework is involved in the game loop.
 
 ## Audio
-A small Web Audio layer creates short oscillator envelopes for sword attacks, spells, damage, healing, and phase transition. Audio is initialised after the first user gesture to comply with browser autoplay policies. If Web Audio is unavailable, the game remains playable silently.
+
+`AudioManager` creates short oscillator envelopes for attacks, spells, damage, healing, and phase transition. Audio initialises after the first user gesture. If Web Audio is unavailable, the game remains playable silently.
 
 ## Responsive behaviour
-CSS uses viewport sizing and media queries. On coarse pointers, touch controls appear and the keyboard footer is hidden. The canvas itself scales through `resize()`. No external framework or build step is required.
 
-## Deployment structure
-The static deployment contains:
+CSS uses viewport sizing and media queries. On coarse pointers, touch controls appear and the keyboard footer is hidden. The canvas scales through `CanvasRenderer.resize()`.
+
+## Assets
+
+Future external assets should live under:
 
 ```text
-.openai/hosting.json
- dist/index.html
- dist/style.css
- dist/game.js
+src/assets/images/
+src/assets/audio/
+src/assets/data/
 ```
 
-`static.directory` is `dist`. The site is deployed privately as **Ashen Vow**.
+These directories are reserved placeholders. The current build still uses procedural visuals and synthesized audio.
 
-## Verification performed
-The source was syntax checked with Node. A headless simulation check exercised melee damage, charged sorcery, dodge invulnerability, healing, phase transition, and player death. Browser visual QA was not run for this version.
+## Deployment
+
+GitHub Actions workflow `.github/workflows/static.yml`:
+
+1. checks out the repository
+2. runs `npm ci`
+3. runs `npm run build`
+4. publishes `dist/` to GitHub Pages
+
+Vite `base` is set to `/ashen-vow/` in `vite.config.ts` so scripts and styles resolve under the project Pages URL.
+
+`hosting.json` at the repository root is a legacy ChatGPT Sites export artifact and is not used by the current GitHub Pages pipeline.
+
+## Migration notes (v0.1 → v0.2)
+
+This release is an architectural migration only. Gameplay timings, controls, boss behaviour, HUD copy, and procedural presentation were preserved from the original monolithic `game.js` implementation.
+
+Preserved prototype quirks documented for future reference:
+
+- Player max HP/FP/SP are hard-coded to 100 in multiple places rather than always referencing shared constants.
+- Boss attack selection uses a simple rotating combo counter rather than weighted or reactive AI.
+- Ring hazard collision uses a fixed tolerance band (`abs(distance - radius) < 13`).
+- Sorcery charge visual particles spawn probabilistically (`Math.random() < 0.5`).
+- Death/victory overlay updates are delayed by 1000 ms via `setTimeout`.
 
 ## Future technical work
-Potential next steps include a data-driven attack definition format, hitbox visualisation/debug mode, animation state objects, sound asset management, gamepad remapping, pause-safe audio handling, and a larger scene system if exploration is added.
+
+Potential next steps include additional typed boss content files, hitbox visualisation/debug mode, animation state objects, external sound assets, gamepad remapping, pause-safe audio handling, and optional React (or similar) for menu-heavy UI outside the canvas loop.
