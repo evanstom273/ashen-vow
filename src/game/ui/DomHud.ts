@@ -6,6 +6,7 @@ import {
 	getEquippedSpellState,
 	getSpellCycleLabel,
 } from '../state/spellState.ts';
+import { isSpellCharged } from '../content/spells.ts';
 import type { GameState } from '../types.ts';
 
 function $(id: string): HTMLElement {
@@ -60,10 +61,10 @@ export class DomHud {
 
 		this.stateEl.textContent = player.heal > 0
 			? 'DRINKING…'
-			: state.charging
-				? state.charge > spell.chargeThreshold
-					? 'SORCERY CHARGED'
-					: 'GATHERING LIGHT'
+				: state.charging
+					? isSpellCharged(spell, state.charge)
+						? 'SORCERY CHARGED'
+						: 'GATHERING LIGHT'
 				: spellState.remainingCasts <= 0
 					? 'NO CASTS REMAIN'
 					: spellState.cooldownRemaining > 0

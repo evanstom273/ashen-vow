@@ -14,6 +14,7 @@ import {
 	updatePlayerRegen,
 	updateSorceryCharge,
 } from './systems/playerActions.ts';
+import { updateBossEffects } from './systems/effectSystem.ts';
 import { updateProjectiles } from './systems/projectiles.ts';
 import { createInitialGameState, createInitialInputState, resetCombatState } from './state/createState.ts';
 import { updateSpellCooldowns } from './state/spellState.ts';
@@ -157,6 +158,7 @@ export class Game {
 			},
 			dt,
 		);
+		updateBossEffects(this.combatContext, dt);
 		updateProjectiles(this.combatContext, dt);
 		updateHazards(this.combatContext, dt);
 		this.hud.sync(this.state);

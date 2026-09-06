@@ -1,5 +1,6 @@
 import { ARENA, ARENA_BOUNDARY_INSET, dist } from '../constants.ts';
 import { PLAYER_TUNING } from '../content/playerDefaults.ts';
+import type { DamageType } from '../content/effects.ts';
 import { spawnBurst } from '../effects/particles.ts';
 import type { AudioManager } from '../audio/AudioManager.ts';
 import type { GameState, Vec2 } from '../types.ts';
@@ -11,6 +12,24 @@ export interface CombatContext {
 	onBossDefeated: () => void;
 }
 
+export interface HitBossOptions {
+	flash?: boolean;
+	shake?: number;
+	particles?: number;
+	particleColor?: string;
+	particleSpeed?: number;
+	audio?: boolean;
+}
+
+const DEFAULT_HIT_BOSS_OPTIONS: Required<HitBossOptions> = {
+	flash: true,
+	shake: 4,
+	particles: 18,
+	particleColor: '#d6b378',
+	particleSpeed: 100,
+	audio: true,
+};
+
 export function constrainToArena(entity: Vec2): void {
 	const distance = dist(entity, ARENA);
 	const radius = ARENA.r - ARENA_BOUNDARY_INSET;
@@ -20,16 +39,27 @@ export function constrainToArena(entity: Vec2): void {
 	}
 }
 
-export function hitBoss(ctx: CombatContext, damage: number): void {
+export function hitBoss(
+	ctx: CombatContext,
+	damage: number,
+	_damageType: DamageType = 'physical',
+	options: HitBossOptions = {},
+): void {
 	const { state, audio, onBossDefeated } = ctx;
 	const { boss } = state;
 	if (boss.hp <= 0) return;
 
+	const resolved = { ...DEFAULT_HIT_BOSS_OPTIONS, ...options };
+
 	boss.hp = Math.max(0, boss.hp - damage);
-	boss.flash = 0.12;
-	spawnBurst(state, boss.x, boss.y, '#d6b378', 18);
-	state.shake = 4;
-	audio.play(90, 0.16, 'triangle', 0.08);
+	if (resolved.flash) {
+		boss.flash = 0.12;
+	}
+	spawnBurst(state, boss.x, boss.y, resolved.particleColor, resolved.particles, resolved.particleSpeed);
+	state.shake = Math.max(state.shake, resolved.shake);
+	if (resolved.audio) {
+		audio.play(90, 0.16, 'triangle', 0.08);
+	}
 
 	if (boss.hp <= 0) {
 		onBossDefeated();
