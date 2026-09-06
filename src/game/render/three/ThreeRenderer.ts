@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { GameMode, GameState } from '../../types.ts';
 import type { GameRenderer } from '../GameRenderer.ts';
-import { gameXToWorld, gameYToWorld, getForwardFromGameState } from './worldMapping.ts';
+import { gameXToWorld, gameYToWorld } from './worldMapping.ts';
 import { CAMERA_CONFIG, getCameraRig } from './cameraConfig.ts';
 import { buildArenaScene, buildLighting } from './buildArenaScene.ts';
 import { buildActorScene } from './actorScene.ts';
@@ -65,8 +65,7 @@ export class ThreeRenderer implements GameRenderer {
 		const playerX = gameXToWorld(state.player.x);
 		const playerZ = gameYToWorld(state.player.y);
 		const shake = state.shake;
-		const forward = getForwardFromGameState(state);
-		const rig = getCameraRig(playerX, playerZ, forward.forwardX, forward.forwardZ);
+		const rig = getCameraRig(playerX, playerZ);
 
 		this.camera.position.set(
 			rig.position.x + (Math.random() - 0.5) * shake * 0.35,

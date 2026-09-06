@@ -1,59 +1,59 @@
 import * as THREE from 'three';
 
-/** Tunable elevated camera — Don't Starve–inspired presentation (camera only). */
+/** Tunable elevated camera — fixed world orientation, tracks player position only. */
 export const CAMERA_CONFIG = {
 	/** Perspective vertical field of view in degrees. */
 	fov: 42,
-	/** Camera height above the arena plane (world Y). */
-	elevation: 420,
-	/** Distance behind the player on the gameplay XZ plane. */
-	distance: 520,
-	/** Look-at point ahead of the player along the view forward axis. */
-	lookAhead: 120,
-	/** Look-at height above the ground plane. */
-	lookAtY: 12,
 	/** Near/far clip planes. */
 	near: 10,
 	far: 2500,
+	/**
+	 * Fixed world-space view forward on the gameplay XZ plane.
+	 * Defines camera yaw and screen-relative movement — never derived from player facing or lock-on.
+	 */
+	viewForwardX: 0,
+	viewForwardZ: 1,
+	/** Fixed offset from player world position to camera position. */
+	positionOffsetX: 0,
+	positionOffsetY: 420,
+	positionOffsetZ: -520,
+	/** Fixed offset from player world position to look-at point. */
+	lookOffsetX: 0,
+	lookOffsetY: 12,
+	lookOffsetZ: 120,
 } as const;
 
-export function normalizeForward(forwardX: number, forwardZ: number): { forwardX: number; forwardZ: number } {
-	const length = Math.hypot(forwardX, forwardZ) || 1;
-	return { forwardX: forwardX / length, forwardZ: forwardZ / length };
+export function getFixedViewForward(): { forwardX: number; forwardZ: number } {
+	const length = Math.hypot(CAMERA_CONFIG.viewForwardX, CAMERA_CONFIG.viewForwardZ) || 1;
+	return {
+		forwardX: CAMERA_CONFIG.viewForwardX / length,
+		forwardZ: CAMERA_CONFIG.viewForwardZ / length,
+	};
 }
 
-/** Fixed elevated camera rig behind the player, looking toward the forward axis. */
-export function getCameraRig(
-	playerX: number,
-	playerZ: number,
-	forwardX: number,
-	forwardZ: number,
-): { position: THREE.Vector3; lookAt: THREE.Vector3 } {
-	const forward = normalizeForward(forwardX, forwardZ);
+/** Fixed elevated camera rig — translates with player, never rotates with facing or lock-on. */
+export function getCameraRig(playerX: number, playerZ: number): { position: THREE.Vector3; lookAt: THREE.Vector3 } {
 	return {
 		position: new THREE.Vector3(
-			playerX - forward.forwardX * CAMERA_CONFIG.distance,
-			CAMERA_CONFIG.elevation,
-			playerZ - forward.forwardZ * CAMERA_CONFIG.distance,
+			playerX + CAMERA_CONFIG.positionOffsetX,
+			CAMERA_CONFIG.positionOffsetY,
+			playerZ + CAMERA_CONFIG.positionOffsetZ,
 		),
 		lookAt: new THREE.Vector3(
-			playerX + forward.forwardX * CAMERA_CONFIG.lookAhead,
-			CAMERA_CONFIG.lookAtY,
-			playerZ + forward.forwardZ * CAMERA_CONFIG.lookAhead,
+			playerX + CAMERA_CONFIG.lookOffsetX,
+			CAMERA_CONFIG.lookOffsetY,
+			playerZ + CAMERA_CONFIG.lookOffsetZ,
 		),
 	};
 }
 
-/** Camera forward/right on the gameplay XZ plane for movement remapping. */
-export function getCameraMovementAxes(
-	forwardX: number,
-	forwardZ: number,
-): { forwardX: number; forwardZ: number; rightX: number; rightZ: number } {
-	const forward = normalizeForward(forwardX, forwardZ);
+/** Fixed camera forward/right on the gameplay XZ plane for movement remapping. */
+export function getCameraMovementAxes(): { forwardX: number; forwardZ: number; rightX: number; rightZ: number } {
+	const { forwardX, forwardZ } = getFixedViewForward();
 	return {
-		forwardX: forward.forwardX,
-		forwardZ: forward.forwardZ,
-		rightX: forward.forwardZ,
-		rightZ: -forward.forwardX,
+		forwardX,
+		forwardZ,
+		rightX: forwardZ,
+		rightZ: -forwardX,
 	};
 }
