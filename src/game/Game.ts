@@ -112,7 +112,7 @@ export class Game {
 			if (win) {
 				this.overlay.showVictoryScreen(this.state.attempts);
 			} else {
-				const percentTaken = Math.round((1 - this.state.boss.hp / this.state.boss.max) * 100);
+				const percentTaken = Math.round((1 - this.state.boss.hp / this.state.boss.baseMax) * 100);
 				this.overlay.showDeathScreen(this.state.attempts, percentTaken);
 			}
 		}, 1000);
