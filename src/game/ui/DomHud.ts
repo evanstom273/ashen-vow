@@ -8,6 +8,7 @@ import {
 	getSpellCycleLabel,
 } from '../state/spellState.ts';
 import { isSpellCharged } from '../content/spells.ts';
+import { getTravelFormDefinition } from '../content/travelForms.ts';
 import type { GameState } from '../types.ts';
 
 function $(id: string): HTMLElement {
@@ -33,6 +34,10 @@ export class DomHud {
 	private readonly slotSpellCastsEl = $('slotSpellCasts');
 	private readonly slotSpellIndexEl = $('slotSpellIndex');
 	private readonly slotFlasksEl = $('slotFlasks');
+	private readonly slotUtilityEl = $('slotUtility');
+	private readonly slotUtilityTagEl = $('slotUtilityTag');
+	private readonly slotUtilityTitleEl = $('slotUtilityTitle');
+	private readonly slotUtilityMetaEl = $('slotUtilityMeta');
 	private readonly slotRightEl = $('slotRight');
 	private readonly slotContextEl = $('slotContext');
 	private readonly slotContextTagEl = $('slotContextTag');
@@ -100,11 +105,25 @@ export class DomHud {
 		this.slotSpellNameEl.textContent = spell.displayName;
 		this.slotSpellCastsEl.textContent = String(spellState.remainingCasts);
 		this.slotSpellIndexEl.textContent = getSpellCycleLabel(state);
-		this.slotFlasksEl.textContent = String(player.flasks);
+		const travelForm = getTravelFormDefinition(player.selectedTravelForm);
+		const transformSelected = state.utilityItem === 'transform';
+		this.slotUtilityEl.classList.toggle('is-transform', transformSelected);
+		this.slotUtilityTagEl.textContent = transformSelected ? 'Form' : '✦';
+		this.slotUtilityTitleEl.textContent = transformSelected
+			? (player.transformed || player.transformProgress > 0.5 ? 'Return' : travelForm.shortName)
+			: 'Flask';
+		this.slotFlasksEl.textContent = transformSelected ? '◇' : String(player.flasks);
+		this.slotUtilityMetaEl.textContent = transformSelected
+			? 'tap cycle · hold shift'
+			: 'tap cycle · hold drink';
 		this.slotRightEl.classList.toggle('is-charging', state.charging);
 		this.slotRightEl.classList.toggle('is-ready', canCastEquippedSpell(state));
 
-		this.stateEl.textContent = player.heal > 0
+		this.stateEl.textContent = player.transformProgress > 0 && player.transformProgress < 1
+			? 'FORM SHIFTING…'
+			: player.transformed
+				? `${travelForm.displayName} · ${player.sprinting ? 'SPRINTING' : 'TRAVELLING'}`
+				: player.heal > 0
 			? 'DRINKING…'
 				: state.charging
 					? isSpellCharged(spell, state.charge)
