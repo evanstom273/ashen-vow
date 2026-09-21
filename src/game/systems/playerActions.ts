@@ -24,7 +24,7 @@ export function handlePlayerAction(ctx: PlayerActionContext, action: PlayerActio
 		onPause();
 		return;
 	}
-	if (state.scene.kind !== 'combat') return;
+	if (state.scene.kind !== 'combat' && state.scene.kind !== 'world') return;
 
 	if (action === 'dodge' && player.sp >= PLAYER_TUNING.dodge.staminaCost && player.roll <= 0 && player.cd < PLAYER_TUNING.dodge.cooldownGate && player.heal <= 0) {
 		player.sp -= PLAYER_TUNING.dodge.staminaCost;
@@ -45,7 +45,7 @@ export function handlePlayerAction(ctx: PlayerActionContext, action: PlayerActio
 		audio.play(420, 0.08, 'sine', 0.03);
 	}
 
-	if (action === 'castStart' && player.cd <= 0 && player.roll <= 0 && player.heal <= 0 && canCastEquippedSpell(state)) {
+	if (action === 'castStart' && state.scene.kind === 'combat' && player.cd <= 0 && player.roll <= 0 && player.heal <= 0 && canCastEquippedSpell(state)) {
 		state.charging = true;
 		state.charge = 0;
 	}

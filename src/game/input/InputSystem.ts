@@ -6,6 +6,7 @@ export type CastReleaseHandler = () => void;
 export type StartHandler = () => void;
 
 const GAMEPAD_ACTION_MAP: Record<string, PlayerAction> = {
+	'0': 'interact',
 	'4': 'cycleSpell',
 	'1': 'dodge',
 	'2': 'useConsumable',
@@ -135,6 +136,7 @@ export class InputSystem {
 
 	private mapKeyboardDown(key: string): PlayerAction | null {
 		if (key === 'Escape') return 'pause';
+		if (key === 'f') return 'interact';
 		if (key === ' ') return 'dodge';
 		if (key === 'q' || key === '1') return 'cycleSpell';
 		if (key === 'k') return 'castStart';

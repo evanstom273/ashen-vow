@@ -2,6 +2,7 @@ import { WORLD_CENTER_X, WORLD_CENTER_Y, WORLD_HEIGHT, WORLD_WIDTH } from '../co
 import type { GameMode, GameState, Viewport } from '../types.ts';
 import { getAreaDefinition } from '../content/areas.ts';
 import { getArtTheme } from './artThemes.ts';
+import { renderOverworld } from '../world/overworldRenderer.ts';
 import {
 	drawArena,
 	drawAtmosphericDust,
@@ -58,10 +59,14 @@ export class CanvasRenderer {
 		const shakeOffset = state.shake;
 
 		ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-		const artTheme = getArtTheme(getAreaDefinition(state.currentAreaId).artTheme);
+		const currentArea = getAreaDefinition(state.currentAreaId);
+		const artTheme = getArtTheme(currentArea.artTheme);
 		ctx.fillStyle = artTheme.background;
 		ctx.fillRect(0, 0, w, h);
 
+		if (currentArea.kind === 'overworld') {
+			renderOverworld(ctx, state, viewport);
+		} else {
 		ctx.save();
 		ctx.translate(
 			ox + (Math.random() - 0.5) * shakeOffset,
@@ -91,6 +96,7 @@ export class CanvasRenderer {
 		drawAtmosphericDust(ctx, state.time, state.currentAreaId);
 
 		ctx.restore();
+		}
 
 		const vignette = ctx.createRadialGradient(w / 2, h / 2, h * 0.2, w / 2, h / 2, Math.max(w, h) * 0.7);
 		vignette.addColorStop(0, '#0000');

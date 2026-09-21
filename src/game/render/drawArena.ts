@@ -160,6 +160,7 @@ const ARENA_DRAWERS = {
 
 export function drawArena(ctx: CanvasRenderingContext2D, time: number, areaId: AreaId): void {
 	const area = getAreaDefinition(areaId);
+	if (area.artTheme === 'wilds') return;
 	ARENA_DRAWERS[area.artTheme](ctx, time);
 }
 

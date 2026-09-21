@@ -5,7 +5,7 @@ export type GameMode = 'title' | 'play' | 'pause' | 'dead' | 'win';
 
 export type SceneKind = 'title' | 'world' | 'combat' | 'pause' | 'transition' | 'dead' | 'victory';
 export type FightId = 'aeron' | 'vael';
-export type AreaId = 'aeron-arena' | 'vael-arena';
+export type AreaId = 'ashen-wilds' | 'aeron-arena' | 'vael-arena';
 export type AreaKind = 'overworld' | 'boss' | 'interior';
 
 export interface SceneState {
@@ -59,7 +59,7 @@ export interface AreaDefinition {
 	spawns: readonly AreaSpawn[];
 	exits: readonly AreaExit[];
 	fightId?: FightId;
-	artTheme: 'sanctum' | 'orrery';
+	artTheme: 'wilds' | 'sanctum' | 'orrery';
 }
 
 export type EntityKind = 'player' | 'enemy' | 'boss' | 'npc' | 'interactable' | 'projectile' | 'hazard';
@@ -235,6 +235,7 @@ export interface GameState {
 	scene: SceneState;
 	currentAreaId: AreaId;
 	fightId: FightId;
+	encounterOriginAreaId: AreaId | null;
 	world: WorldState;
 	attempts: number;
 	time: number;
@@ -264,6 +265,7 @@ export type PlayerAction =
 	| 'useConsumable'
 	| 'castStart'
 	| 'castRelease'
+	| 'interact'
 	| 'pause';
 
 export interface InputState {
