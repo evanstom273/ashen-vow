@@ -27,6 +27,7 @@
 			</div>
 		</section>
 		<div id="notice" aria-live="polite"></div>
+		<div id="interactionPrompt" aria-live="polite"></div>
 		<div id="bossHud">
 			<div>
 				<span id="bossName">AERON, THE HOLLOW KING</span>
@@ -40,6 +41,7 @@
 			<span><kbd>Q</kbd> Cycle spell</span>
 			<span><kbd>K</kbd> Right hand <em>hold to cast</em></span>
 			<span><kbd>E</kbd> Flask</span>
+			<span><kbd>F</kbd> Interact</span>
 			<span class="controller">Controller supported</span>
 		</footer>
 		<div id="actionSlots" class="slot-diamond" aria-label="Equipment slots">
@@ -66,6 +68,7 @@
 		</div>
 		<div id="touch">
 			<div class="touch-left">
+				<button type="button" id="interactButton" class="touch-interact" data-action="interact" aria-label="Interact">Interact</button>
 				<div class="move-stick" aria-label="Move">
 					<div class="move-stick-base"></div>
 					<div class="move-stick-knob"></div>
