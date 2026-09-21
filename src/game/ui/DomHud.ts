@@ -25,6 +25,7 @@ export class DomHud {
 	private readonly hpEl = $('hp') as HTMLElement;
 	private readonly spEl = $('sp') as HTMLElement;
 	private readonly stateEl = $('state');
+	private readonly runesEl = $('runes');
 	private readonly bossHpEl = $('bossHp') as HTMLElement;
 	private readonly phaseEl = $('phase');
 	private readonly bossNameEl = $('bossName');
@@ -100,6 +101,7 @@ export class DomHud {
 
 		this.hpEl.style.width = `${player.hp}%`;
 		this.spEl.style.width = `${player.sp}%`;
+		this.runesEl.textContent = state.runes.toLocaleString('en-GB');
 		// Always scale against baseMax so temporary max-HP reduction never looks like a heal.
 		this.bossHpEl.style.width = `${(boss.hp / boss.baseMax) * 100}%`;
 		this.bossNameEl.textContent = fight.displayName;

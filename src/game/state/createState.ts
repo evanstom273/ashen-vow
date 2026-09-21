@@ -59,6 +59,7 @@ export function createInitialGameState(): GameState {
 		encounterOriginAreaId: null,
 		world: createInitialWorldState(),
 		attempts: 0,
+		runes: 0,
 		time: 0,
 		player: createPlayerState(),
 		boss: createBossState(initialFight),
