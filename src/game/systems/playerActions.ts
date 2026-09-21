@@ -24,7 +24,7 @@ export function handlePlayerAction(ctx: PlayerActionContext, action: PlayerActio
 		onPause();
 		return;
 	}
-	if (state.mode !== 'play') return;
+	if (state.scene.kind !== 'combat') return;
 
 	if (action === 'dodge' && player.sp >= PLAYER_TUNING.dodge.staminaCost && player.roll <= 0 && player.cd < PLAYER_TUNING.dodge.cooldownGate && player.heal <= 0) {
 		player.sp -= PLAYER_TUNING.dodge.staminaCost;
@@ -66,7 +66,7 @@ export function releaseCast(ctx: CombatContext): void {
 	if (!state.charging) return;
 
 	state.charging = false;
-	if (state.mode !== 'play' || !canCastEquippedSpell(state)) return;
+	if (state.scene.kind !== 'combat' || !canCastEquippedSpell(state)) return;
 
 	const spell = getEquippedSpellDefinition(state);
 	const powered = isSpellCharged(spell, state.charge);

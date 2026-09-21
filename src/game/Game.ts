@@ -1,11 +1,14 @@
 import { MAX_DELTA_TIME } from './constants.ts';
 import { AudioManager } from './audio/AudioManager.ts';
+import { getAreaForFight } from './content/areas.ts';
 import { getFightDefinition } from './content/fights.ts';
 import { decayShake, updateParticles } from './effects/particles.ts';
+import { GameEventBus } from './events/GameEventBus.ts';
+import { SceneController } from './flow/SceneController.ts';
 import { InputSystem } from './input/InputSystem.ts';
 import { CanvasRenderer } from './render/CanvasRenderer.ts';
 import { updateBoss } from './systems/bossUpdate.ts';
-import { constrainToFightArena, type CombatContext } from './systems/combat.ts';
+import { constrainToArea, type CombatContext } from './systems/combat.ts';
 import { updateHazards } from './systems/hazards.ts';
 import {
 	handlePlayerAction,
@@ -19,6 +22,7 @@ import { updateBossEffects } from './systems/effectSystem.ts';
 import { updateProjectiles } from './systems/projectiles.ts';
 import { createInitialGameState, createInitialInputState, resetCombatState } from './state/createState.ts';
 import { updateSpellCooldowns } from './state/spellState.ts';
+import { markBossDefeated, respawnBoss } from './state/worldState.ts';
 import { DomHud } from './ui/DomHud.ts';
 import { OverlayController } from './ui/OverlayController.ts';
 import type { FightId, GameState, InputState, PlayerAction } from './types.ts';
@@ -27,6 +31,8 @@ export class Game {
 	private readonly state: GameState = createInitialGameState();
 	private readonly inputState: InputState = createInitialInputState();
 	private readonly audio = new AudioManager();
+	private readonly events = new GameEventBus();
+	private readonly scenes = new SceneController(this.state, this.events);
 	private readonly hud = new DomHud();
 	private readonly overlay = new OverlayController();
 	private readonly renderer: CanvasRenderer;
@@ -50,7 +56,7 @@ export class Game {
 		const menuButton = document.getElementById('menu');
 		const pauseButton = document.getElementById('pause');
 		beginButton?.addEventListener('click', () => {
-			if (this.state.mode === 'title') this.startFight('aeron');
+			if (this.state.scene.kind === 'title') this.startFight('aeron');
 			else this.start();
 		});
 		secondFightButton?.addEventListener('click', () => this.startFight('vael'));
@@ -59,9 +65,7 @@ export class Game {
 		this.overlay.showMainMenu();
 
 		addEventListener('blur', () => {
-			if (this.state.mode === 'play') {
-				this.togglePause();
-			}
+			if (this.state.scene.kind === 'combat') this.togglePause();
 		});
 
 		requestAnimationFrame((now) => this.frame(now));
@@ -82,42 +86,52 @@ export class Game {
 
 	private startFight(fightId: FightId): void {
 		this.state.fightId = fightId;
-		this.start();
+		this.state.currentAreaId = getAreaForFight(fightId).id;
+		respawnBoss(this.state.world, fightId);
+		this.beginCombatAttempt();
+	}
+
+	private beginCombatAttempt(): void {
+		this.audio.init();
+		resetCombatState(this.state);
+		this.state.attempts += 1;
+		this.scenes.enterCombat(this.state.currentAreaId);
+		this.overlay.setPlaying(true);
+		this.hud.sync(this.state);
+		this.announce(getFightDefinition(this.state.fightId).introAnnouncement, 2.5);
+		this.lastFrameTime = performance.now();
 	}
 
 	private returnToMenu(): void {
-		this.state.mode = 'title';
 		this.state.charging = false;
 		this.state.charge = 0;
 		this.input.clearKeys();
+		this.scenes.returnToTitle();
 		this.overlay.showMainMenu();
 	}
 
 	start(): void {
-		if (this.state.mode === 'pause') {
-			this.state.mode = 'play';
+		if (this.state.scene.kind === 'pause') {
+			const resumeScene = this.state.scene.previousKind === 'world' ? 'world' : 'combat';
+			this.scenes.transition(resumeScene, this.state.currentAreaId);
 			this.overlay.setPlaying(true);
 			this.lastFrameTime = performance.now();
 			return;
 		}
 
-		this.audio.init();
-		resetCombatState(this.state);
-		this.state.attempts += 1;
-		this.state.mode = 'play';
-		this.overlay.setPlaying(true);
-		this.announce(getFightDefinition(this.state.fightId).introAnnouncement, 2.5);
+		respawnBoss(this.state.world, this.state.fightId);
+		this.beginCombatAttempt();
 	}
 
 	private togglePause(): void {
-		if (this.state.mode !== 'play' && this.state.mode !== 'pause') return;
+		if (!['combat', 'world', 'pause'].includes(this.state.scene.kind)) return;
 
-		if (this.state.mode === 'pause') {
+		if (this.state.scene.kind === 'pause') {
 			this.start();
 			return;
 		}
 
-		this.state.mode = 'pause';
+		this.scenes.transition('pause', this.state.currentAreaId);
 		this.input.clearKeys();
 		this.state.charging = false;
 		this.state.charge = 0;
@@ -125,11 +139,18 @@ export class Game {
 	}
 
 	private end(win: boolean): void {
-		this.state.mode = win ? 'win' : 'dead';
 		this.state.charging = false;
+		if (win) {
+			markBossDefeated(this.state.world, this.state.fightId);
+			this.events.emit({ type: 'bossDefeated', fightId: this.state.fightId });
+			this.scenes.transition('victory', this.state.currentAreaId);
+		} else {
+			this.events.emit({ type: 'playerDied', fightId: this.state.fightId });
+			this.scenes.transition('dead', this.state.currentAreaId);
+		}
 
 		window.setTimeout(() => {
-			if (this.state.mode !== 'dead' && this.state.mode !== 'win') return;
+			if (this.state.scene.kind !== 'dead' && this.state.scene.kind !== 'victory') return;
 
 			if (win) {
 				this.overlay.showVictoryScreen(this.state.attempts, this.state.fightId);
@@ -161,7 +182,7 @@ export class Game {
 		updateParticles(this.state, dt);
 		decayShake(this.state, dt);
 
-		if (this.state.mode !== 'play') return;
+		if (this.state.scene.kind !== 'combat') return;
 
 		this.hud.tickNotice(this.state, dt);
 		updatePlayerRegen(this.state, dt);
@@ -171,7 +192,7 @@ export class Game {
 
 		const movement = this.input.getMovementInput();
 		updatePlayerMovement(this.state, movement, dt);
-		constrainToFightArena(this.state.player, this.state.fightId);
+		constrainToArea(this.state.player, this.state.currentAreaId);
 
 		updateBoss(
 			{
@@ -190,7 +211,7 @@ export class Game {
 		const dt = Math.min(MAX_DELTA_TIME, (now - this.lastFrameTime) / 1000 || 0);
 		this.lastFrameTime = now;
 
-		if (this.state.mode !== 'pause') {
+		if (this.state.scene.kind !== 'pause') {
 			this.update(dt);
 		} else {
 			this.input.pollGamepad();

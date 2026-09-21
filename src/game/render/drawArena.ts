@@ -1,6 +1,8 @@
-import { clamp, TAU } from '../constants.ts';
+import { TAU } from '../constants.ts';
+import { getAreaDefinition } from '../content/areas.ts';
 import { getFightDefinition } from '../content/fights.ts';
-import type { BossState, FightId, GameMode, Hazard } from '../types.ts';
+import { getArtTheme } from './artThemes.ts';
+import type { AreaId, FightId, Hazard } from '../types.ts';
 import { drawCircle, drawLine } from './primitives.ts';
 
 function drawSanctum(ctx: CanvasRenderingContext2D, time: number): void {
@@ -151,62 +153,14 @@ function drawOrrery(ctx: CanvasRenderingContext2D, time: number): void {
 		ctx.restore();
 	}
 }
-export function drawArena(ctx: CanvasRenderingContext2D, time: number, fightId: FightId): void {
-	if (getFightDefinition(fightId).visuals.arena === 'orrery') drawOrrery(ctx, time);
-	else drawSanctum(ctx, time);
-}
+const ARENA_DRAWERS = {
+	sanctum: drawSanctum,
+	orrery: drawOrrery,
+} as const;
 
-export function drawBossTelegraph(ctx: CanvasRenderingContext2D, boss: BossState, mode: GameMode, time: number, fightId: FightId): void {
-	if (boss.state !== 'windup' || mode !== 'play') return;
-	const fight = getFightDefinition(fightId);
-	const pulseAlpha = 0.78 + Math.sin(time * 15) * 0.12;
-	ctx.globalAlpha = pulseAlpha;
-
-	if (fightId === 'vael') {
-		if (boss.move === 0) {
-			const offsets = [[0,0],[-92,0],[92,0],[0,-92],[0,92]] as const;
-			for (const [dx, dy] of offsets) {
-				drawCircle(ctx, boss.tx + dx, boss.ty + dy, 50, '#7daab21f', '#9fcbd3aa', 2);
-				drawCircle(ctx, boss.tx + dx, boss.ty + dy, 8 + Math.sin(time * 8) * 2, null, '#c3e7e8aa', 1);
-			}
-		} else if (boss.move === 1) {
-			drawCircle(ctx, 500, 375, 46, '#7daab222', '#a8d7dbaa', 2);
-			const base = Math.atan2(boss.ty - 375, boss.tx - 500);
-			for (let i = 0; i < 2; i++) {
-				const a = base + i * Math.PI;
-				drawLine(ctx, 500, 375, 500 + Math.cos(a) * 430, 375 + Math.sin(a) * 430, '#9fcbd399', 8);
-			}
-		} else {
-			const aim = Math.atan2(boss.y - boss.ty, boss.x - boss.tx);
-			drawCircle(ctx, boss.tx, boss.ty, 58, '#7daab222', '#a8d7dbaa', 2);
-			drawCircle(ctx, boss.tx, boss.ty, 18 + Math.sin(time * 9) * 3, null, '#d0eeeecc', 2);
-			for (let i = -1; i <= 1; i++) {
-				const a = aim + Math.PI + i * 0.34;
-				drawLine(ctx, boss.tx, boss.ty, boss.tx + Math.cos(a) * 220, boss.ty + Math.sin(a) * 220, '#9fcbd355', 3);
-			}
-		}
-		ctx.globalAlpha = 1;
-		return;
-	}
-
-	if (boss.move === 0) {
-		const r = fight.attacks[0].meleeRadius;
-		drawCircle(ctx, boss.x, boss.y, r, fight.visuals.accentSoft, fight.visuals.accent, 2);
-	} else if (boss.move === 1) {
-		ctx.save();
-		ctx.translate(boss.x, boss.y);
-		ctx.rotate(boss.angle);
-		ctx.fillStyle = fight.visuals.accentSoft;
-		ctx.fillRect(0, -24, 270, 48);
-		ctx.strokeStyle = fight.visuals.accent;
-		ctx.strokeRect(0, -24, 270, 48);
-		ctx.restore();
-	} else {
-		const r = fight.attacks[2].blastRadius;
-		drawCircle(ctx, boss.tx, boss.ty, r, fight.visuals.accentSoft, fight.visuals.accent, 2);
-		drawCircle(ctx, boss.tx, boss.ty, r * (1 - clamp(boss.timer / fight.attacks[2].windup, 0, 1)), null, fight.visuals.accent, 2);
-	}
-	ctx.globalAlpha = 1;
+export function drawArena(ctx: CanvasRenderingContext2D, time: number, areaId: AreaId): void {
+	const area = getAreaDefinition(areaId);
+	ARENA_DRAWERS[area.artTheme](ctx, time);
 }
 
 export function drawHazards(ctx: CanvasRenderingContext2D, hazards: Hazard[], fightId: FightId): void {
@@ -245,11 +199,11 @@ export function drawHazards(ctx: CanvasRenderingContext2D, hazards: Hazard[], fi
 	}
 }
 
-export function drawAtmosphericDust(ctx: CanvasRenderingContext2D, time: number, fightId: FightId): void {
-	const vael = fightId === 'vael';
-	for (let i = 0; i < (vael ? 62 : 45); i++) {
+export function drawAtmosphericDust(ctx: CanvasRenderingContext2D, time: number, areaId: AreaId): void {
+	const theme = getArtTheme(getAreaDefinition(areaId).artTheme);
+	for (let i = 0; i < theme.dustCount; i++) {
 		const x = (i * 137.2 + Math.sin(time * 0.3 + i) * 15) % 1100;
-		const y = (i * 73 - time * (vael ? 7 + (i % 5) : 4 + (i % 4)) + 85000) % 850;
-		drawCircle(ctx, x, y, vael && i % 9 === 0 ? 1.8 : 1, vael ? '#b7dadd38' : '#c7cba133');
+		const y = (i * 73 - time * (theme.dustSpeed + (i % 5)) + 85000) % 850;
+		drawCircle(ctx, x, y, theme.id === 'orrery' && i % 9 === 0 ? 1.8 : 1, theme.dustColor);
 	}
 }

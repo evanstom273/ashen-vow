@@ -1,9 +1,10 @@
 import { ARENA, ARENA_BOUNDARY_INSET, clamp, dist } from '../constants.ts';
+import { getAreaDefinition } from '../content/areas.ts';
 import { PLAYER_TUNING } from '../content/playerDefaults.ts';
 import type { DamageType } from '../content/effects.ts';
 import { spawnBurst } from '../effects/particles.ts';
 import type { AudioManager } from '../audio/AudioManager.ts';
-import type { FightId, GameState, Vec2 } from '../types.ts';
+import type { AreaId, GameState, Vec2 } from '../types.ts';
 
 export interface CombatContext {
 	state: GameState;
@@ -39,13 +40,20 @@ export function constrainToArena(entity: Vec2): void {
 	}
 }
 
-export function constrainToFightArena(entity: Vec2, fightId: FightId): void {
-	if (fightId === 'vael') {
-		entity.x = clamp(entity.x, 155, 845);
-		entity.y = clamp(entity.y, 145, 620);
+export function constrainToArea(entity: Vec2, areaId: AreaId): void {
+	const bounds = getAreaDefinition(areaId).bounds;
+	if (bounds.kind === 'rect') {
+		entity.x = clamp(entity.x, bounds.minX, bounds.maxX);
+		entity.y = clamp(entity.y, bounds.minY, bounds.maxY);
 		return;
 	}
-	constrainToArena(entity);
+
+	const distance = Math.hypot(entity.x - bounds.x, entity.y - bounds.y);
+	const radius = bounds.radius - bounds.inset;
+	if (distance > radius) {
+		entity.x = bounds.x + ((entity.x - bounds.x) * radius) / distance;
+		entity.y = bounds.y + ((entity.y - bounds.y) * radius) / distance;
+	}
 }
 
 export function hitBoss(
@@ -78,7 +86,7 @@ export function hitBoss(
 export function hurtPlayer(ctx: CombatContext, damage: number): void {
 	const { state, audio, onPlayerDeath } = ctx;
 	const { player } = state;
-	if (player.inv > 0 || state.mode !== 'play') return;
+	if (player.inv > 0 || state.scene.kind !== 'combat') return;
 
 	player.hp = Math.max(0, player.hp - damage);
 	player.inv = PLAYER_TUNING.invulnerabilityAfterHit;

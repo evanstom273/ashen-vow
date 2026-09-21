@@ -3,7 +3,100 @@ import type { SpellId } from './content/spells.ts';
 
 export type GameMode = 'title' | 'play' | 'pause' | 'dead' | 'win';
 
+export type SceneKind = 'title' | 'world' | 'combat' | 'pause' | 'transition' | 'dead' | 'victory';
 export type FightId = 'aeron' | 'vael';
+export type AreaId = 'aeron-arena' | 'vael-arena';
+export type AreaKind = 'overworld' | 'boss' | 'interior';
+
+export interface SceneState {
+	kind: SceneKind;
+	areaId: AreaId | null;
+	previousKind: SceneKind | null;
+}
+
+export interface Vec2 {
+	x: number;
+	y: number;
+}
+
+export interface CircleBounds {
+	kind: 'circle';
+	x: number;
+	y: number;
+	radius: number;
+	inset: number;
+}
+
+export interface RectBounds {
+	kind: 'rect';
+	minX: number;
+	maxX: number;
+	minY: number;
+	maxY: number;
+}
+
+export type AreaBounds = CircleBounds | RectBounds;
+
+export interface AreaExit {
+	id: string;
+	position: Vec2;
+	targetAreaId: AreaId;
+	targetSpawnId: string;
+}
+
+export interface AreaSpawn {
+	id: string;
+	position: Vec2;
+	facing: number;
+}
+
+export interface AreaDefinition {
+	id: AreaId;
+	kind: AreaKind;
+	displayName: string;
+	subtitle: string;
+	bounds: AreaBounds;
+	spawns: readonly AreaSpawn[];
+	exits: readonly AreaExit[];
+	fightId?: FightId;
+	artTheme: 'sanctum' | 'orrery';
+}
+
+export type EntityKind = 'player' | 'enemy' | 'boss' | 'npc' | 'interactable' | 'projectile' | 'hazard';
+
+export interface EntityDefinition {
+	id: string;
+	kind: EntityKind;
+	position: Vec2;
+}
+
+export interface ActorDefinition extends EntityDefinition {
+	kind: 'player' | 'enemy' | 'boss' | 'npc';
+	facing: number;
+}
+
+export interface InteractableDefinition extends EntityDefinition {
+	kind: 'interactable';
+	interactionId: string;
+}
+
+export interface BossWorldState {
+	alive: boolean;
+	defeatedCount: number;
+}
+
+export interface WorldState {
+	bosses: Record<FightId, BossWorldState>;
+	flags: Record<string, boolean>;
+	activeCheckpointId: string | null;
+}
+
+export type GameEvent =
+	| { type: 'sceneChanged'; from: SceneKind; to: SceneKind; areaId: AreaId | null }
+	| { type: 'areaEntered'; areaId: AreaId }
+	| { type: 'bossDefeated'; fightId: FightId }
+	| { type: 'playerDied'; fightId: FightId }
+	| { type: 'checkpointRested'; checkpointId: string };
 
 export type BossFsmState = 'idle' | 'windup' | 'attack' | 'recover';
 
@@ -11,11 +104,6 @@ export type HazardKind = 'ring' | 'blast' | 'starfall' | 'beam';
 
 /** Boss attack pattern index cycled via combo counter. */
 export type BossAttackIndex = 0 | 1 | 2;
-
-export interface Vec2 {
-	x: number;
-	y: number;
-}
 
 export interface Arena {
 	x: number;
@@ -144,7 +232,10 @@ export interface SpellRuntimeState {
 
 export interface GameState {
 	mode: GameMode;
+	scene: SceneState;
+	currentAreaId: AreaId;
 	fightId: FightId;
+	world: WorldState;
 	attempts: number;
 	time: number;
 	player: PlayerState;
