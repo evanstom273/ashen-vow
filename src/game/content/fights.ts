@@ -140,11 +140,11 @@ const VAEL_FIGHT: BossFightDefinition = {
 		},
 	},
 	attacks: [
-		{ id: 'glass-halo', windup: 0.72, attackDuration: 0.22, meleeRadius: 112, damage: 22 },
-		{ id: 'comet-step', windup: 0.78, attackDuration: 0.5, lungeSpeed: 690, hitRadius: 48, damage: 27 },
+		{ id: 'constellation-fall', windup: 0.92, attackDuration: 0.22, meleeRadius: 112, damage: 22 },
+		{ id: 'celestial-sweep', windup: 1.05, attackDuration: 1.5, lungeSpeed: 690, hitRadius: 48, damage: 27 },
 		{
-			id: 'fallen-star',
-			windup: 1.45,
+			id: 'mirror-gate',
+			windup: 0.86,
 			attackDuration: 0.24,
 			blastRadius: 82,
 			blastDuration: 0.38,
