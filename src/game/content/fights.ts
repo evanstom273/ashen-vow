@@ -1,14 +1,14 @@
-import type { BossAttackIndex, FightId } from '../types.ts';
+import type { BossAttackIndex, EnemyId, FightId } from '../types.ts';
+import { getEnemyDefinition, type EnemyDefinition } from './enemies.ts';
 
-export interface BossFightDefinition {
+export interface BossFightEncounterDefinition {
 	id: FightId;
-	displayName: string;
+	enemyId: EnemyId;
 	locationName: string;
 	locationSubtitle: string;
 	introAnnouncement: string;
 	introDialogue: string;
 	allowTravelForm: boolean;
-	maxHp: number;
 	spawn: { x: number; y: number };
 	idleTimer: number;
 	approachDistance: number;
@@ -59,15 +59,14 @@ export interface BossFightDefinition {
 	};
 }
 
-const AERON_FIGHT: BossFightDefinition = {
+const AERON_FIGHT: BossFightEncounterDefinition = {
 	id: 'aeron',
-	displayName: 'AERON, THE HOLLOW KING',
+	enemyId: 'aeron',
 	locationName: 'THE SUNKEN SANCTUM',
 	locationSubtitle: 'A duel at the end of an age',
 	introAnnouncement: 'THE LAST WATCH',
 	introDialogue: 'You crossed a dead kingdom for this. Come, then — let the crown remember you.',
 	allowTravelForm: false,
-	maxHp: 1200,
 	spawn: { x: 500, y: 260 },
 	idleTimer: 2,
 	approachDistance: 88,
@@ -118,15 +117,14 @@ const AERON_FIGHT: BossFightDefinition = {
 	},
 };
 
-const VAEL_FIGHT: BossFightDefinition = {
+const VAEL_FIGHT: BossFightEncounterDefinition = {
 	id: 'vael',
-	displayName: 'VAEL, THE STARVED SEER',
+	enemyId: 'vael',
 	locationName: 'THE SHATTERED ORRERY',
 	locationSubtitle: 'Where dead stars still turn',
 	introAnnouncement: 'THE ORRERY WAKES',
 	introDialogue: 'I have watched your path in broken stars. It ends beneath this sky.',
 	allowTravelForm: false,
-	maxHp: 980,
 	spawn: { x: 500, y: 245 },
 	idleTimer: 1.5,
 	approachDistance: 150,
@@ -177,13 +175,17 @@ const VAEL_FIGHT: BossFightDefinition = {
 	},
 };
 
-export const FIGHTS: Record<FightId, BossFightDefinition> = {
+export type BossFightDefinition = BossFightEncounterDefinition & Pick<EnemyDefinition, 'displayName' | 'maxHp'>;
+
+export const FIGHTS: Record<FightId, BossFightEncounterDefinition> = {
 	aeron: AERON_FIGHT,
 	vael: VAEL_FIGHT,
 };
 
 export function getFightDefinition(id: FightId): BossFightDefinition {
-	return FIGHTS[id];
+	const fight = FIGHTS[id];
+	const enemy = getEnemyDefinition(fight.enemyId);
+	return { ...fight, displayName: enemy.displayName, maxHp: enemy.maxHp };
 }
 
 export function getAttackIndex(combo: number): BossAttackIndex {

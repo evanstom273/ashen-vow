@@ -33,15 +33,18 @@ Collision consumes generic circle/rectangle bounds through `constrainToArea()`; 
 
 Shared entity contracts distinguish actors, bosses, NPCs, interactables, projectiles and hazards. These are intentionally data-oriented rather than class-heavy, so future areas can declare content without coupling it to rendering.
 
-## Bosses
+## Enemies and bosses
 
-Boss behavior is dispatched through the `BossController` interface.
+Shared enemy identity and runtime metadata live in `content/enemies.ts` as typed `EnemyDefinition` records. The definition owns reusable properties such as enemy category, display name, maximum health, rune reward and controller ID. Boss encounters in `content/fights.ts` reference an enemy definition rather than duplicating those values.
 
+Boss behavior is dispatched through the `BossController` interface using the controller ID declared by the enemy definition.
+
+- `content/enemies.ts` — shared enemy definitions
 - `bosses/aeronController.ts`
 - `bosses/vaelController.ts`
-- `systems/bossUpdate.ts` is only the registry/dispatcher
+- `systems/bossUpdate.ts` — controller registry/dispatcher
 
-This prevents new bosses from turning a single update file into a large switch statement while keeping shared combat helpers reusable.
+This keeps enemy data separate from encounter-specific boss phases and attacks, and gives future regular enemies the same definition model without requiring them to be boss fights.
 
 ## Rendering
 
