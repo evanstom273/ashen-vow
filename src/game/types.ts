@@ -253,6 +253,7 @@ export interface GameState {
 	world: WorldState;
 	attempts: number;
 	runes: number;
+	pendingRuneReward: number;
 	time: number;
 	player: PlayerState;
 	boss: BossState;

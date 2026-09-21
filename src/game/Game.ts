@@ -292,7 +292,7 @@ export class Game {
 			if (this.state.postFight) return;
 			const fight = getFightDefinition(this.state.fightId);
 			const enemy = getEnemyDefinition(fight.enemyId);
-			this.state.runes += enemy.runeReward;
+			this.state.pendingRuneReward = enemy.runeReward;
 			markBossDefeated(this.state.world, this.state.fightId);
 			this.events.emit({ type: 'bossDefeated', fightId: this.state.fightId });
 			this.state.postFight = true;
@@ -597,6 +597,10 @@ export class Game {
 		if (this.state.bossDeathProgress < 1) {
 			const previous = this.state.bossDeathProgress;
 			this.state.bossDeathProgress = Math.min(1, previous + dt / 1.85);
+			if (previous < 0.28 && this.state.bossDeathProgress >= 0.28 && this.state.pendingRuneReward > 0) {
+				this.state.runes += this.state.pendingRuneReward;
+				this.state.pendingRuneReward = 0;
+			}
 			if (Math.random() < 0.35) {
 				spawnBurst(
 					this.state,
