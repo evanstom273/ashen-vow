@@ -39,12 +39,13 @@ export function createBossState(fightId: FightId): BossState {
 
 export function createInitialGameState(): GameState {
 	const initialFight: FightId = 'aeron';
-	const initialArea = getAreaForFight(initialFight);
+	const initialAreaId = 'ashen-wilds' as const;
 	const state: GameState = {
 		mode: 'title',
 		scene: { kind: 'title', areaId: null, previousKind: null },
-		currentAreaId: initialArea.id,
+		currentAreaId: initialAreaId,
 		fightId: initialFight,
+		encounterOriginAreaId: null,
 		world: createInitialWorldState(),
 		attempts: 0,
 		time: 0,
