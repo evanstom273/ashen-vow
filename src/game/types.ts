@@ -3,6 +3,8 @@ import type { SpellId } from './content/spells.ts';
 
 export type GameMode = 'title' | 'play' | 'pause' | 'dead' | 'win';
 
+export type FightId = 'aeron' | 'vael';
+
 export type BossFsmState = 'idle' | 'windup' | 'attack' | 'recover';
 
 export type HazardKind = 'ring' | 'blast';
@@ -120,6 +122,7 @@ export interface SpellRuntimeState {
 
 export interface GameState {
 	mode: GameMode;
+	fightId: FightId;
 	attempts: number;
 	time: number;
 	player: PlayerState;
