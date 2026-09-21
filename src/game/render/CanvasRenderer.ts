@@ -59,11 +59,12 @@ export class CanvasRenderer {
 		const shakeOffset = state.shake;
 
 		ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-		const artTheme = getArtTheme(getAreaDefinition(state.currentAreaId).artTheme);
+		const currentArea = getAreaDefinition(state.currentAreaId);
+		const artTheme = getArtTheme(currentArea.artTheme);
 		ctx.fillStyle = artTheme.background;
 		ctx.fillRect(0, 0, w, h);
 
-		if (state.scene.kind === 'world') {
+		if (currentArea.kind === 'overworld') {
 			renderOverworld(ctx, state, viewport);
 		} else {
 		ctx.save();
