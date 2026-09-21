@@ -1,5 +1,5 @@
 import type { GameState, Viewport } from '../types.ts';
-import { drawKnight } from '../render/drawActors.ts';
+import { drawKnight, drawParticles } from '../render/drawActors.ts';
 import { drawCircle, drawLine } from '../render/primitives.ts';
 import {
 	AERON_GATE_POSITION,
@@ -110,9 +110,13 @@ function drawGrace(ctx: CanvasRenderingContext2D, time: number): void {
 	ctx.restore();
 }
 
-function drawTree(ctx: CanvasRenderingContext2D, prop: WorldProp): void {
+function drawTree(ctx: CanvasRenderingContext2D, prop: WorldProp, state: GameState): void {
 	const s = prop.scale;
+	const dx = state.player.x - prop.x;
+	const dy = state.player.y - prop.y;
+	const hiddenBehindCanopy = state.player.y < prop.sortY && Math.hypot(dx, dy + 42 * s) < 58 * s;
 	ctx.save();
+	if (hiddenBehindCanopy) ctx.globalAlpha = 0.62;
 	ctx.translate(prop.x, prop.y);
 	ctx.rotate(prop.rotation ?? 0);
 	drawCircle(ctx, 4 * s, 15 * s, 22 * s, '#0006');
@@ -245,7 +249,7 @@ function drawTower(ctx: CanvasRenderingContext2D, prop: WorldProp): void {
 	ctx.restore();
 }
 
-function drawGate(ctx: CanvasRenderingContext2D, prop: WorldProp, bossAlive: boolean): void {
+function drawGate(ctx: CanvasRenderingContext2D, prop: WorldProp, bossAlive: boolean, time: number): void {
 	ctx.save();
 	ctx.translate(prop.x, prop.y);
 	ctx.fillStyle = '#383f38';
@@ -255,7 +259,24 @@ function drawGate(ctx: CanvasRenderingContext2D, prop: WorldProp, bossAlive: boo
 	ctx.strokeStyle = '#808274';
 	ctx.lineWidth = 4;
 	ctx.strokeRect(-38, -118, 76, 54);
-	for (let x = -29; x <= 29; x += 14) drawLine(ctx, x, -62, x, 38, bossAlive ? '#765e3f' : '#343934', 6);
+	if (bossAlive) {
+		ctx.fillStyle = '#59452f';
+		ctx.save();
+		ctx.translate(-38, -12);
+		ctx.rotate(-0.5);
+		ctx.fillRect(-8, -48, 16, 84);
+		ctx.restore();
+		ctx.save();
+		ctx.translate(38, -12);
+		ctx.rotate(0.5);
+		ctx.fillRect(-8, -48, 16, 84);
+		ctx.restore();
+		drawCircle(ctx, 0, 2, 3 + Math.sin(time * 4) * 0.7, '#d3b566');
+	} else {
+		ctx.globalAlpha = 0.55 + Math.sin(time * 2.4) * 0.08;
+		drawCircle(ctx, 0, -5, 44, '#6d786b22', '#a2aa9555', 3);
+		ctx.globalAlpha = 1;
+	}
 	ctx.fillStyle = bossAlive ? '#b79b5d' : '#5b5f57';
 	ctx.font = '12px Georgia';
 	ctx.textAlign = 'center';
@@ -263,9 +284,9 @@ function drawGate(ctx: CanvasRenderingContext2D, prop: WorldProp, bossAlive: boo
 	ctx.restore();
 }
 
-function drawProp(ctx: CanvasRenderingContext2D, prop: WorldProp, time: number, bossAlive: boolean): void {
+function drawProp(ctx: CanvasRenderingContext2D, prop: WorldProp, time: number, bossAlive: boolean, state: GameState): void {
 	switch (prop.kind) {
-		case 'tree': drawTree(ctx, prop); break;
+		case 'tree': drawTree(ctx, prop, state); break;
 		case 'rock': drawRock(ctx, prop); break;
 		case 'stump': drawStump(ctx, prop); break;
 		case 'torch': drawTorch(ctx, prop, time); break;
@@ -275,7 +296,7 @@ function drawProp(ctx: CanvasRenderingContext2D, prop: WorldProp, time: number, 
 		case 'marker': drawMarker(ctx, prop); break;
 		case 'wall': drawWall(ctx, prop); break;
 		case 'tower': drawTower(ctx, prop); break;
-		case 'gate': drawGate(ctx, prop, bossAlive); break;
+		case 'gate': drawGate(ctx, prop, bossAlive, time); break;
 	}
 }
 
@@ -305,7 +326,7 @@ export function renderOverworld(
 
 	const layers: Array<{ sortY: number; draw: () => void }> = visible.map((prop) => ({
 		sortY: prop.sortY,
-		draw: () => drawProp(ctx, prop, state.time, state.world.bosses.aeron.alive),
+		draw: () => drawProp(ctx, prop, state.time, state.world.bosses.aeron.alive, state),
 	}));
 	layers.push({
 		sortY: state.player.y,
@@ -313,6 +334,7 @@ export function renderOverworld(
 	});
 	layers.sort((a, b) => a.sortY - b.sortY);
 	for (const layer of layers) layer.draw();
+	drawParticles(ctx, state.particles);
 
 	ctx.restore();
 }
