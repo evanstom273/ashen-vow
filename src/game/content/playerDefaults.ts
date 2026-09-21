@@ -29,7 +29,8 @@ export const PLAYER_TUNING = {
 		restore: 58,
 	},
 	movement: {
-		normalSpeed: 175,
+		normalSpeed: 108,
+		sprintSpeed: 180,
 		healingSpeed: 65,
 	},
 	regen: {
