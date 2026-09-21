@@ -63,76 +63,94 @@ function drawSanctum(ctx: CanvasRenderingContext2D, time: number): void {
 }
 
 function drawOrrery(ctx: CanvasRenderingContext2D, time: number): void {
-	const fog = ctx.createRadialGradient(500, 330, 60, 500, 370, 610);
-	fog.addColorStop(0, '#273942');
-	fog.addColorStop(0.55, '#17262d');
-	fog.addColorStop(1, '#070d12');
+	const fog = ctx.createRadialGradient(500, 340, 90, 500, 380, 650);
+	fog.addColorStop(0, '#253840');
+	fog.addColorStop(0.58, '#111e24');
+	fog.addColorStop(1, '#05090d');
 	ctx.fillStyle = fog;
 	ctx.fillRect(-1000, -1000, 3000, 3000);
 
-	drawCircle(ctx, 500, 370, 334, '#0d171c', '#48616a', 2);
-	drawCircle(ctx, 500, 370, 306, '#202d33', '#78909a', 3);
-
 	ctx.save();
 	ctx.beginPath();
-	ctx.arc(500, 370, 302, 0, TAU);
+	ctx.roundRect(120, 110, 760, 540, 54);
 	ctx.clip();
-	for (let row = -2; row < 21; row++) {
-		for (let col = -2; col < 24; col++) {
-			const x = col * 48 + ((row & 1) ? 24 : 0);
-			const y = row * 38;
-			const n = Math.sin(row * 17 + col * 41) * 0.5 + 0.5;
-			ctx.fillStyle = n > 0.62 ? '#24343a' : '#1d2a30';
-			ctx.fillRect(x + 1, y + 1, 45, 35);
-			if ((row + col) % 5 === 0) {
-				drawLine(ctx, x + 8, y + 7, x + 37, y + 28, '#6c879025', 1);
-				drawCircle(ctx, x + 24, y + 18, 2, '#a7d1d633');
+
+	ctx.fillStyle = '#18272d';
+	ctx.fillRect(120, 110, 760, 540);
+
+	for (let y = 130; y < 650; y += 52) {
+		for (let x = 140; x < 880; x += 64) {
+			const stagger = ((Math.floor(y / 52) & 1) * 32);
+			const px = x + stagger;
+			const n = Math.sin(px * 0.031 + y * 0.047) * 0.5 + 0.5;
+			ctx.fillStyle = n > 0.58 ? '#22343a' : '#1b2b31';
+			ctx.fillRect(px, y, 58, 46);
+			if ((px + y) % 4 < 1) {
+				drawLine(ctx, px + 8, y + 8, px + 46, y + 35, '#6e919a22');
 			}
 		}
 	}
-	for (const radius of [72, 118, 184, 245]) {
-		ctx.save();
-		ctx.translate(500, 370);
-		ctx.rotate(time * (radius === 184 ? -0.025 : 0.018));
-		ctx.setLineDash(radius === 118 ? [12, 8] : [3, 7]);
-		drawCircle(ctx, 0, 0, radius, null, '#8db4bd45', radius === 245 ? 2 : 1);
-		ctx.restore();
-	}
+
+	ctx.strokeStyle = '#789ca5';
+	ctx.lineWidth = 3;
+	ctx.strokeRect(145, 135, 710, 490);
+
+	ctx.setLineDash([12, 10]);
+	ctx.strokeStyle = '#8bb1ba55';
+	ctx.lineWidth = 2;
+	ctx.beginPath();
+	ctx.moveTo(500, 135);
+	ctx.lineTo(500, 625);
+	ctx.moveTo(145, 380);
+	ctx.lineTo(855, 380);
+	ctx.stroke();
 	ctx.setLineDash([]);
-	for (let i = 0; i < 8; i++) {
-		const a = (i * TAU) / 8 + time * 0.012;
-		const x = 500 + Math.cos(a) * 184;
-		const y = 370 + Math.sin(a) * 184;
-		drawCircle(ctx, x, y, i % 2 ? 5 : 8, '#759ba5', '#b6d9dd', 1);
-		drawLine(ctx, 500, 370, x, y, '#66858d24');
+
+	for (const [x, y] of [[250, 235], [750, 235], [250, 525], [750, 525]] as const) {
+		drawCircle(ctx, x, y, 66, null, '#6f949d44', 2);
+		drawCircle(ctx, x, y, 20, '#20343a', '#9fc7cc', 2);
+		drawCircle(ctx, x, y, 5 + Math.sin(time * 3 + x) * 1.5, '#b9e3e3');
 	}
-	drawCircle(ctx, 500, 370, 31, '#172329', '#9fc2c8', 2);
-	drawCircle(ctx, 500, 370, 8 + Math.sin(time * 2) * 2, '#a9d8dd88');
+
+	ctx.save();
+	ctx.translate(500, 380);
+	ctx.rotate(time * 0.06);
+	for (let i = 0; i < 4; i++) {
+		ctx.rotate(Math.PI / 2);
+		drawLine(ctx, 0, 40, 0, 122, '#8db4bd44', 2);
+		drawCircle(ctx, 0, 130, 8, '#729ba5', '#c6e5e5', 1);
+	}
 	ctx.restore();
 
-	for (let i = 0; i < 8; i++) {
-		const a = (i * TAU) / 8 + Math.PI / 8;
-		const x = 500 + Math.cos(a) * 325;
-		const y = 370 + Math.sin(a) * 325;
+	ctx.restore();
+
+	ctx.strokeStyle = '#4d6c75';
+	ctx.lineWidth = 5;
+	ctx.beginPath();
+	ctx.roundRect(120, 110, 760, 540, 54);
+	ctx.stroke();
+
+	for (let i = 0; i < 10; i++) {
+		const side = i % 2 === 0 ? 1 : -1;
+		const x = side > 0 ? 98 : 902;
+		const y = 150 + (i % 5) * 112;
 		ctx.save();
 		ctx.translate(x, y);
-		ctx.rotate(a + Math.PI / 2);
-		ctx.fillStyle = '#293a40';
-		ctx.strokeStyle = '#71909a';
+		ctx.fillStyle = '#24383e';
+		ctx.strokeStyle = '#73939b';
 		ctx.lineWidth = 2;
 		ctx.beginPath();
-		ctx.moveTo(0, -29);
-		ctx.lineTo(15, 7);
-		ctx.lineTo(0, 22);
-		ctx.lineTo(-15, 7);
+		ctx.moveTo(0, -24);
+		ctx.lineTo(18 * side, 0);
+		ctx.lineTo(0, 24);
+		ctx.lineTo(-10 * side, 0);
 		ctx.closePath();
 		ctx.fill();
 		ctx.stroke();
-		drawCircle(ctx, 0, -4, 4 + Math.sin(time * 5 + i) * 1.5, '#b7e1df');
+		drawCircle(ctx, 0, 0, 4 + Math.sin(time * 4 + i), '#a9d9dc');
 		ctx.restore();
 	}
 }
-
 export function drawArena(ctx: CanvasRenderingContext2D, time: number, fightId: FightId): void {
 	if (getFightDefinition(fightId).visuals.arena === 'orrery') drawOrrery(ctx, time);
 	else drawSanctum(ctx, time);
@@ -141,8 +159,33 @@ export function drawArena(ctx: CanvasRenderingContext2D, time: number, fightId: 
 export function drawBossTelegraph(ctx: CanvasRenderingContext2D, boss: BossState, mode: GameMode, time: number, fightId: FightId): void {
 	if (boss.state !== 'windup' || mode !== 'play') return;
 	const fight = getFightDefinition(fightId);
-	const pulseAlpha = 0.86 + Math.sin(time * 15) * 0.08;
+	const pulseAlpha = 0.78 + Math.sin(time * 15) * 0.12;
 	ctx.globalAlpha = pulseAlpha;
+
+	if (fightId === 'vael') {
+		if (boss.move === 0) {
+			const offsets = [[0,0],[-92,0],[92,0],[0,-92],[0,92]] as const;
+			for (const [dx, dy] of offsets) {
+				drawCircle(ctx, boss.tx + dx, boss.ty + dy, 50, '#7daab21f', '#9fcbd3aa', 2);
+				drawCircle(ctx, boss.tx + dx, boss.ty + dy, 8 + Math.sin(time * 8) * 2, null, '#c3e7e8aa', 1);
+			}
+		} else if (boss.move === 1) {
+			drawCircle(ctx, 500, 375, 46, '#7daab222', '#a8d7dbaa', 2);
+			for (let i = 0; i < 2; i++) {
+				const a = boss.angle + i * Math.PI;
+				drawLine(ctx, 500, 375, 500 + Math.cos(a) * 430, 375 + Math.sin(a) * 430, '#9fcbd399', 8);
+			}
+		} else {
+			drawCircle(ctx, boss.x, boss.y, 58, '#7daab222', '#a8d7dbaa', 2);
+			for (let i = -1; i <= 1; i++) {
+				const a = boss.angle + i * 0.34;
+				drawLine(ctx, boss.x, boss.y, boss.x + Math.cos(a) * 760, boss.y + Math.sin(a) * 760, '#9fcbd377', 4);
+			}
+		}
+		ctx.globalAlpha = 1;
+		return;
+	}
+
 	if (boss.move === 0) {
 		const r = fight.attacks[0].meleeRadius;
 		drawCircle(ctx, boss.x, boss.y, r, fight.visuals.accentSoft, fight.visuals.accent, 2);
@@ -151,9 +194,9 @@ export function drawBossTelegraph(ctx: CanvasRenderingContext2D, boss: BossState
 		ctx.translate(boss.x, boss.y);
 		ctx.rotate(boss.angle);
 		ctx.fillStyle = fight.visuals.accentSoft;
-		ctx.fillRect(0, -24, fight.id === 'vael' ? 320 : 270, 48);
+		ctx.fillRect(0, -24, 270, 48);
 		ctx.strokeStyle = fight.visuals.accent;
-		ctx.strokeRect(0, -24, fight.id === 'vael' ? 320 : 270, 48);
+		ctx.strokeRect(0, -24, 270, 48);
 		ctx.restore();
 	} else {
 		const r = fight.attacks[2].blastRadius;
@@ -169,8 +212,32 @@ export function drawHazards(ctx: CanvasRenderingContext2D, hazards: Hazard[], fi
 		if (hazard.kind === 'ring') {
 			drawCircle(ctx, hazard.x, hazard.y, hazard.r, null, visuals.hazard, 8);
 			drawCircle(ctx, hazard.x, hazard.y, hazard.r + 6, null, visuals.accentSoft, 2);
-		} else {
+		} else if (hazard.kind === 'blast') {
 			drawCircle(ctx, hazard.x, hazard.y, hazard.r, visuals.hazardSoft, visuals.hazard, 3);
+		} else if (hazard.kind === 'starfall') {
+			const progress = Math.max(0, Math.min(1, hazard.t / 0.9));
+			drawCircle(ctx, hazard.x, hazard.y, hazard.r, '#83b4bd20', '#a9dbe2aa', 2);
+			drawCircle(ctx, hazard.x, hazard.y, Math.max(5, hazard.r * progress), null, '#d3eeeeaa', 2);
+			if (hazard.triggered) {
+				ctx.save();
+				ctx.translate(hazard.x, hazard.y);
+				ctx.strokeStyle = '#d7f1f1aa';
+				ctx.lineWidth = 3;
+				for (let i = 0; i < 6; i++) {
+					ctx.rotate(Math.PI / 3);
+					drawLine(ctx, 0, 0, 0, hazard.r + 24, '#d7f1f1aa', 3);
+				}
+				ctx.restore();
+			}
+		} else if (hazard.kind === 'beam') {
+			const ex = hazard.x + Math.cos(hazard.angle) * hazard.length;
+			const ey = hazard.y + Math.sin(hazard.angle) * hazard.length;
+			ctx.save();
+			ctx.shadowColor = '#aee4e8';
+			ctx.shadowBlur = 14;
+			drawLine(ctx, hazard.x, hazard.y, ex, ey, '#9dd4da99', hazard.width * 2);
+			drawLine(ctx, hazard.x, hazard.y, ex, ey, '#e2f6f5cc', Math.max(2, hazard.width * 0.45));
+			ctx.restore();
 		}
 	}
 }
