@@ -5,7 +5,7 @@ import { decayShake, updateParticles } from './effects/particles.ts';
 import { InputSystem } from './input/InputSystem.ts';
 import { CanvasRenderer } from './render/CanvasRenderer.ts';
 import { updateBoss } from './systems/bossUpdate.ts';
-import { constrainToArena, type CombatContext } from './systems/combat.ts';
+import { constrainToFightArena, type CombatContext } from './systems/combat.ts';
 import { updateHazards } from './systems/hazards.ts';
 import {
 	handlePlayerAction,
@@ -171,7 +171,7 @@ export class Game {
 
 		const movement = this.input.getMovementInput();
 		updatePlayerMovement(this.state, movement, dt);
-		constrainToArena(this.state.player);
+		constrainToFightArena(this.state.player, this.state.fightId);
 
 		updateBoss(
 			{

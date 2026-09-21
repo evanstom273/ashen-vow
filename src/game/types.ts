@@ -7,7 +7,7 @@ export type FightId = 'aeron' | 'vael';
 
 export type BossFsmState = 'idle' | 'windup' | 'attack' | 'recover';
 
-export type HazardKind = 'ring' | 'blast';
+export type HazardKind = 'ring' | 'blast' | 'starfall' | 'beam';
 
 /** Boss attack pattern index cycled via combo counter. */
 export type BossAttackIndex = 0 | 1 | 2;
@@ -105,7 +105,29 @@ export interface BlastHazard {
 	t: number;
 }
 
-export type Hazard = RingHazard | BlastHazard;
+export interface StarfallHazard {
+	kind: 'starfall';
+	x: number;
+	y: number;
+	r: number;
+	t: number;
+	triggered: boolean;
+	damage: number;
+}
+
+export interface BeamHazard {
+	kind: 'beam';
+	x: number;
+	y: number;
+	angle: number;
+	length: number;
+	width: number;
+	angularSpeed: number;
+	t: number;
+	damage: number;
+}
+
+export type Hazard = RingHazard | BlastHazard | StarfallHazard | BeamHazard;
 
 export interface Viewport {
 	w: number;

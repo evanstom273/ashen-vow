@@ -3,7 +3,7 @@ import { PLAYER_TUNING } from '../content/playerDefaults.ts';
 import type { DamageType } from '../content/effects.ts';
 import { spawnBurst } from '../effects/particles.ts';
 import type { AudioManager } from '../audio/AudioManager.ts';
-import type { GameState, Vec2 } from '../types.ts';
+import type { FightId, GameState, Vec2 } from '../types.ts';
 
 export interface CombatContext {
 	state: GameState;
@@ -37,6 +37,15 @@ export function constrainToArena(entity: Vec2): void {
 		entity.x = ARENA.x + ((entity.x - ARENA.x) * radius) / distance;
 		entity.y = ARENA.y + ((entity.y - ARENA.y) * radius) / distance;
 	}
+}
+
+export function constrainToFightArena(entity: Vec2, fightId: FightId): void {
+	if (fightId === 'vael') {
+		entity.x = clamp(entity.x, 155, 845);
+		entity.y = clamp(entity.y, 145, 620);
+		return;
+	}
+	constrainToArena(entity);
 }
 
 export function hitBoss(
