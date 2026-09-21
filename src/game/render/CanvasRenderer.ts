@@ -100,7 +100,7 @@ export class CanvasRenderer {
 			drawKnight(ctx, state.player, false, state.time, state.phase2, state.fightId, state.charging);
 			drawKnight(ctx, state.boss, true, state.time, state.phase2, state.fightId, false, state.bossDeathProgress);
 		} else {
-			drawKnight(ctx, state.boss, true, state.time, state.phase2, state.fightId);
+			drawKnight(ctx, state.boss, true, state.time, state.phase2, state.fightId, false, state.bossDeathProgress);
 			drawKnight(ctx, state.player, false, state.time, state.phase2, state.fightId);
 		}
 
