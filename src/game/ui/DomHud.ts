@@ -44,6 +44,11 @@ export class DomHud {
 	private readonly slotContextTagEl = $('slotContextTag');
 	private readonly slotContextTitleEl = $('slotContextTitle');
 	private readonly slotContextMetaEl = $('slotContextMeta');
+	private displayedRunes = 0;
+	private runeAnimationStart = 0;
+	private runeAnimationTarget = 0;
+	private runeAnimationStartedAt = 0;
+	private readonly runeAnimationDuration = 850;
 
 	setContextAction(mode: 'roll' | 'grace' | 'gate' | 'blocked' | 'exit'): void {
 		this.slotContextEl.classList.toggle('is-context', mode !== 'roll');
@@ -92,6 +97,25 @@ export class DomHud {
 		}
 	}
 
+	private getAnimatedRuneValue(now: number): number {
+		if (this.runeAnimationStart === this.runeAnimationTarget) return this.runeAnimationTarget;
+		const progress = Math.min(1, Math.max(0, (now - this.runeAnimationStartedAt) / this.runeAnimationDuration));
+		const eased = 1 - (1 - progress) ** 3;
+		return Math.round(this.runeAnimationStart + (this.runeAnimationTarget - this.runeAnimationStart) * eased);
+	}
+
+	private syncRunes(target: number): void {
+		const now = performance.now();
+		if (target !== this.runeAnimationTarget) {
+			this.displayedRunes = this.getAnimatedRuneValue(now);
+			this.runeAnimationStart = this.displayedRunes;
+			this.runeAnimationTarget = target;
+			this.runeAnimationStartedAt = now;
+		}
+		this.displayedRunes = this.getAnimatedRuneValue(now);
+		this.runesEl.textContent = this.displayedRunes.toLocaleString('en-GB');
+	}
+
 	sync(state: GameState): void {
 		const { player, boss } = state;
 		const fight = getFightDefinition(state.fightId);
@@ -101,7 +125,7 @@ export class DomHud {
 
 		this.hpEl.style.width = `${player.hp}%`;
 		this.spEl.style.width = `${player.sp}%`;
-		this.runesEl.textContent = state.runes.toLocaleString('en-GB');
+		this.syncRunes(state.runes);
 		// Always scale against baseMax so temporary max-HP reduction never looks like a heal.
 		this.bossHpEl.style.width = `${(boss.hp / boss.baseMax) * 100}%`;
 		this.bossNameEl.textContent = fight.displayName;
