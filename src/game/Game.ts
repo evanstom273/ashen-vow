@@ -28,6 +28,7 @@ import { OverlayController } from './ui/OverlayController.ts';
 import { restAtCheckpoint, reviveAtCheckpoint } from './world/checkpoints.ts';
 import {
 	isInsideAeronGate,
+	isNearAeronGate,
 	isNearGrace,
 	resolveOverworldCollisions,
 } from './world/overworldContent.ts';
@@ -226,7 +227,15 @@ export class Game {
 			this.hud.setInteractionPrompt(null);
 			return;
 		}
-		this.hud.setInteractionPrompt(isNearGrace(this.state.player) ? 'F / A · REST AT GRACE' : null);
+		if (isNearGrace(this.state.player)) {
+			this.hud.setInteractionPrompt('F / A · REST AT GRACE');
+			return;
+		}
+		if (isNearAeronGate(this.state.player) && !this.state.world.bosses.aeron.alive) {
+			this.hud.setInteractionPrompt('THE HOLLOW KING IS SLAIN · REST AT GRACE TO RESTORE');
+			return;
+		}
+		this.hud.setInteractionPrompt(null);
 	}
 
 	private onAction(action: PlayerAction): void {
