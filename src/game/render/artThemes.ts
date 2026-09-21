@@ -1,4 +1,4 @@
-export type ArtThemeId = 'sanctum' | 'orrery';
+export type ArtThemeId = 'wilds' | 'sanctum' | 'orrery';
 
 export interface ArtThemeDefinition {
 	id: ArtThemeId;
@@ -9,6 +9,13 @@ export interface ArtThemeDefinition {
 }
 
 export const ART_THEMES: Record<ArtThemeId, ArtThemeDefinition> = {
+	wilds: {
+		id: 'wilds',
+		background: '#101914',
+		dustColor: '#b5c49a24',
+		dustCount: 48,
+		dustSpeed: 3,
+	},
 	sanctum: {
 		id: 'sanctum',
 		background: '#0a100f',
