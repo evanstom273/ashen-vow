@@ -137,6 +137,7 @@ export class Game {
 		this.scenes.enterCombat(this.state.currentAreaId);
 		this.overlay.setGameplayScene('combat');
 		this.hud.setInteractionPrompt(null);
+		this.hud.setContextAction('roll');
 		this.hud.sync(this.state);
 		this.announce(getFightDefinition(this.state.fightId).introAnnouncement, 2.5);
 		this.lastFrameTime = performance.now();
