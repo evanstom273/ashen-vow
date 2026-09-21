@@ -37,6 +37,7 @@ export function handlePlayerAction(ctx: PlayerActionContext, action: PlayerActio
 		player.dy = length ? movement.y / length : Math.sin(player.angle);
 		state.charging = false;
 		state.charge = 0;
+		player.swing = 0;
 		audio.play(170, 0.16, 'triangle');
 	}
 
@@ -66,6 +67,7 @@ export function releaseCast(ctx: CombatContext): void {
 	if (!state.charging) return;
 
 	state.charging = false;
+	state.player.swing = 0.24;
 	if (state.scene.kind !== 'combat' || !canCastEquippedSpell(state)) return;
 
 	const spell = getEquippedSpellDefinition(state);
@@ -91,6 +93,9 @@ export function updatePlayerRegen(state: GameState, dt: number): void {
 	player.inv -= dt;
 	player.cd -= dt;
 	player.regen -= dt;
+	player.swing = Math.max(0, player.swing - dt);
+	player.hitReact = Math.max(0, player.hitReact - dt);
+	state.boss.hitReact = Math.max(0, state.boss.hitReact - dt);
 
 	if (player.regen <= 0 && player.roll <= 0 && !state.charging) {
 		player.sp = Math.min(100, player.sp + PLAYER_TUNING.regen.staminaPerSecond * dt);
