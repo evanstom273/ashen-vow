@@ -4,6 +4,7 @@ import { getFightDefinition } from '../content/fights.ts';
 import { getEnemyDefinition } from '../content/enemies.ts';
 import { initializeSpellLoadout, replenishSpellsAtRest } from './spellState.ts';
 import { createInitialWorldState } from './worldState.ts';
+import { createWorldEnemyStates } from './worldEnemyState.ts';
 import type { BossState, FightId, GameState, InputState, PlayerState } from '../types.ts';
 
 export function createPlayerState(): PlayerState {
@@ -51,19 +52,22 @@ export function createBossState(fightId: FightId): BossState {
 export function createInitialGameState(): GameState {
 	const initialFight: FightId = 'aeron';
 	const initialAreaId = 'ashen-wilds' as const;
+	const world = createInitialWorldState();
 	const state: GameState = {
 		mode: 'title',
 		scene: { kind: 'title', areaId: null, previousKind: null },
 		currentAreaId: initialAreaId,
 		fightId: initialFight,
 		encounterOriginAreaId: null,
-		world: createInitialWorldState(),
+		world,
 		attempts: 0,
 		runes: 0,
 		pendingRuneReward: 0,
 		time: 0,
 		player: createPlayerState(),
 		boss: createBossState(initialFight),
+		worldEnemies: createWorldEnemyStates(world.enemyConfigs),
+		worldEnemyProjectiles: [],
 		shots: [],
 		particles: [],
 		hazards: [],

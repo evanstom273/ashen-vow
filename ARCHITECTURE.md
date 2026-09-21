@@ -5,7 +5,7 @@ Ashen Vow is organized so game rules, world data, flow, rendering, and content c
 ## State layers
 
 - **Combat state** lives in `GameState`: current player/boss runtime values, hazards, projectiles, particles, phase and cooldowns.
-- **Persistent world state** lives under `GameState.world`: boss life/death state, checkpoint state and general flags.
+- **Persistent world state** lives under `GameState.world`: boss life/death state, checkpoint state, generated regular-enemy configurations and general flags.
 - `resetCombatState()` resets a fight without destroying persistent world state.
 - Checkpoint rest behavior is centralized in `world/checkpoints.ts`.
 
@@ -35,16 +35,21 @@ Shared entity contracts distinguish actors, bosses, NPCs, interactables, project
 
 ## Enemies and bosses
 
-Shared enemy identity and runtime metadata live in `content/enemies.ts` as typed `EnemyDefinition` records. The definition owns reusable properties such as enemy category, display name, maximum health, rune reward and controller ID. Boss encounters in `content/fights.ts` reference an enemy definition rather than duplicating those values.
+Shared enemy identity metadata lives in `content/enemies.ts` as typed `EnemyDefinition` records. The definition owns reusable properties such as enemy category, display name, maximum health, rune reward and controller ID. Boss encounters in `content/fights.ts` reference an enemy definition rather than duplicating those values.
+
+Regular overworld enemies are authored as fixed spawn slots in `world/enemySpawns.ts`. On new-world creation, each slot resolves once into a persistent `GeneratedEnemyConfig` (archetype, stationary/patrol state, weapon class and spell loadout). Grace respawns reconstruct runtime enemies from those saved configs rather than rerolling them.
 
 Boss behavior is dispatched through the `BossController` interface using the controller ID declared by the enemy definition.
 
 - `content/enemies.ts` — shared enemy definitions
 - `bosses/aeronController.ts`
 - `bosses/vaelController.ts`
-- `systems/bossUpdate.ts` — controller registry/dispatcher
+- `systems/bossUpdate.ts` — boss controller registry/dispatcher
+- `systems/worldEnemies.ts` — generic regular-enemy perception, pursuit and combat AI
+- `content/weapons.ts` — shared weapon-class behaviour and visual identities
+- `state/worldEnemyState.ts` — one-time generation and runtime reconstruction
 
-This keeps enemy data separate from encounter-specific boss phases and attacks, and gives future regular enemies the same definition model without requiring them to be boss fights.
+This keeps enemy data separate from encounter-specific boss phases and attacks. Authored spawn placement stays stable while regular-enemy composition can vary per new world, and shared weapon-class data is reusable by future player equipment.
 
 ## Rendering
 

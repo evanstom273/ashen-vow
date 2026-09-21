@@ -1,12 +1,16 @@
 import type { EffectId } from './content/effects.ts';
 import type { SpellId } from './content/spells.ts';
+import type { WeaponClassId } from './content/weapons.ts';
 
 export type GameMode = 'title' | 'play' | 'pause' | 'dead' | 'win';
 
 export type SceneKind = 'title' | 'world' | 'combat' | 'pause' | 'transition' | 'dead' | 'victory';
-export type EnemyId = 'aeron' | 'vael';
+export type EnemyId = 'aeron' | 'vael' | 'fort-guard';
 export type EnemyCategory = 'regular' | 'boss';
-export type EnemyControllerId = 'aeron' | 'vael';
+export type EnemyControllerId = 'aeron' | 'vael' | 'generic';
+export type EnemyArchetype = 'melee' | 'ranged' | 'magic';
+export type EnemyIdleBehavior = 'stationary' | 'patrol';
+export type EnemyAwarenessState = 'unaware' | 'suspicious' | 'alerted' | 'searching' | 'returning';
 export type FightId = 'aeron' | 'vael';
 export type TravelFormId = 'raven' | 'wolf';
 export type UtilityItemId = 'flask' | 'transform';
@@ -90,8 +94,54 @@ export interface BossWorldState {
 	defeatedCount: number;
 }
 
+export interface GeneratedEnemyConfig {
+	spawnId: string;
+	enemyId: EnemyId;
+	archetype: EnemyArchetype;
+	idleBehavior: EnemyIdleBehavior;
+	weaponClass: WeaponClassId;
+	spellIds: SpellId[];
+}
+
+export interface WorldEnemyState {
+	spawnId: string;
+	config: GeneratedEnemyConfig;
+	x: number;
+	y: number;
+	homeX: number;
+	homeY: number;
+	facing: number;
+	hp: number;
+	maxHp: number;
+	alive: boolean;
+	awareness: number;
+	awarenessState: EnemyAwarenessState;
+	attackCooldown: number;
+	patrolIndex: number;
+	searchTimer: number;
+	lastKnownX: number;
+	lastKnownY: number;
+	hitFlash: number;
+	deathProgress: number;
+	runeGranted: boolean;
+}
+
+export interface WorldEnemyProjectile {
+	x: number;
+	y: number;
+	vx: number;
+	vy: number;
+	t: number;
+	damage: number;
+	kind: 'arrow' | 'magic';
+	spellId?: SpellId;
+	sourceId: string;
+}
+
 export interface WorldState {
 	bosses: Record<FightId, BossWorldState>;
+	enemySeed: number;
+	enemyConfigs: Record<string, GeneratedEnemyConfig>;
 	flags: Record<string, boolean>;
 	activeCheckpointId: string | null;
 }
@@ -257,6 +307,8 @@ export interface GameState {
 	time: number;
 	player: PlayerState;
 	boss: BossState;
+	worldEnemies: WorldEnemyState[];
+	worldEnemyProjectiles: WorldEnemyProjectile[];
 	shots: Shot[];
 	particles: Particle[];
 	hazards: Hazard[];

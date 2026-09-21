@@ -1,5 +1,7 @@
 import type { GameState, Viewport } from '../types.ts';
-import { drawKnight, drawParticles } from '../render/drawActors.ts';
+import { drawChargeRing, drawKnight, drawParticles, drawProjectiles } from '../render/drawActors.ts';
+import { drawWorldEnemy, drawWorldEnemyProjectiles } from '../render/worldEnemyRenderer.ts';
+import { getEquippedSpellDefinition } from '../state/spellState.ts';
 import { drawCircle, drawLine } from '../render/primitives.ts';
 import {
 	AERON_GATE_POSITION,
@@ -494,12 +496,25 @@ export function renderOverworld(
 		sortY: prop.sortY,
 		draw: () => drawProp(ctx, prop, state.time, state.world.bosses.aeron.alive, state),
 	}));
+	for (const enemy of state.worldEnemies) {
+		if (enemy.x < camera.left - 120 || enemy.x > camera.right + 120 || enemy.y < camera.top - 140 || enemy.y > camera.bottom + 140) continue;
+		layers.push({
+			sortY: enemy.y,
+			draw: () => drawWorldEnemy(ctx, enemy, state.time),
+		});
+	}
 	layers.push({
 		sortY: state.player.y,
-		draw: () => drawKnight(ctx, state.player, false, state.time, false, 'aeron'),
+		draw: () => drawKnight(ctx, state.player, false, state.time, false, 'aeron', state.charging),
 	});
 	layers.sort((a, b) => a.sortY - b.sortY);
 	for (const layer of layers) layer.draw();
+	if (state.charging) {
+		const spell = getEquippedSpellDefinition(state);
+		drawChargeRing(ctx, state.player.x, state.player.y, state.charge, spell.visual);
+	}
+	drawProjectiles(ctx, state.shots, state.time);
+	drawWorldEnemyProjectiles(ctx, state.worldEnemyProjectiles, state.time);
 	drawParticles(ctx, state.particles);
 
 	ctx.restore();
