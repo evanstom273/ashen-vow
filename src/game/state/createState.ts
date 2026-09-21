@@ -16,6 +16,11 @@ export function createPlayerState(): PlayerState {
 		regen: 0,
 		moving: false,
 		sprinting: false,
+		transformed: false,
+		selectedTravelForm: 'raven',
+		transformProgress: 0,
+		transformTarget: false,
+		hitReact: 0,
 	};
 }
 
@@ -37,6 +42,7 @@ export function createBossState(fightId: FightId): BossState {
 		ty: 0,
 		effects: [],
 		moving: false,
+		hitReact: 0,
 	};
 }
 
@@ -64,6 +70,7 @@ export function createInitialGameState(): GameState {
 		shake: 0,
 		noticeTime: 0,
 		phase2: false,
+		utilityItem: 'flask',
 	};
 	initializeSpellLoadout(state);
 	return state;
@@ -84,6 +91,10 @@ export function resetCombatState(state: GameState, preserveResources = false): v
 	const previousPlayer = state.player;
 	state.currentAreaId = area.id;
 	state.player = createPlayerState();
+	state.player.selectedTravelForm = previousPlayer.selectedTravelForm;
+	state.player.transformed = false;
+	state.player.transformTarget = false;
+	state.player.transformProgress = 0;
 	if (preserveResources) {
 		state.player.hp = previousPlayer.hp;
 		state.player.sp = previousPlayer.sp;
