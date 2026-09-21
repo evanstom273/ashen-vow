@@ -15,7 +15,7 @@ export const ENEMIES: Record<EnemyId, EnemyDefinition> = {
 		category: 'boss',
 		displayName: 'AERON, THE HOLLOW KING',
 		maxHp: 1200,
-		runeReward: 0,
+		runeReward: 2000,
 		controller: 'aeron',
 	},
 	vael: {
