@@ -23,6 +23,17 @@ function beginBossAttack(state: GameState): void {
 	boss.angle = Math.atan2(player.y - boss.y, player.x - boss.x);
 	boss.tx = player.x;
 	boss.ty = player.y;
+	if (state.fightId === 'vael' && boss.move === 2) {
+		const anchors = [
+			{ x: 210, y: 190 },
+			{ x: 790, y: 190 },
+			{ x: 790, y: 575 },
+			{ x: 210, y: 575 },
+		];
+		const anchor = anchors[boss.combo % anchors.length]!;
+		boss.tx = anchor.x;
+		boss.ty = anchor.y;
+	}
 }
 
 function triggerPhaseTransition(ctx: BossUpdateContext): void {
@@ -157,15 +168,8 @@ function resolveVaelWindup(ctx: BossUpdateContext): void {
 	}
 
 	if (boss.move === 2) {
-		const anchors = [
-			{ x: 210, y: 190 },
-			{ x: 790, y: 190 },
-			{ x: 790, y: 575 },
-			{ x: 210, y: 575 },
-		];
-		const anchor = anchors[boss.combo % anchors.length]!;
-		boss.x = anchor.x;
-		boss.y = anchor.y;
+		boss.x = boss.tx;
+		boss.y = boss.ty;
 		boss.angle = Math.atan2(state.player.y - boss.y, state.player.x - boss.x);
 		for (let i = -1; i <= 1; i++) {
 			state.hazards.push({
