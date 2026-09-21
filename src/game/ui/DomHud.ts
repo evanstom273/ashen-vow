@@ -1,4 +1,4 @@
-import { AERON } from '../content/aeron.ts';
+import { getFightDefinition } from '../content/fights.ts';
 import { PLAYER_TUNING } from '../content/playerDefaults.ts';
 import {
 	canCastEquippedSpell,
@@ -24,6 +24,9 @@ export class DomHud {
 	private readonly stateEl = $('state');
 	private readonly bossHpEl = $('bossHp') as HTMLElement;
 	private readonly phaseEl = $('phase');
+	private readonly bossNameEl = $('bossName');
+	private readonly locationNameEl = $('locationName');
+	private readonly locationSubtitleEl = $('locationSubtitle');
 	private readonly slotSpellNameEl = $('slotSpellName');
 	private readonly slotSpellCastsEl = $('slotSpellCasts');
 	private readonly slotSpellIndexEl = $('slotSpellIndex');
@@ -44,6 +47,7 @@ export class DomHud {
 
 	sync(state: GameState): void {
 		const { player, boss } = state;
+		const fight = getFightDefinition(state.fightId);
 		const spell = getEquippedSpellDefinition(state);
 		const spellState = getEquippedSpellState(state);
 
@@ -51,7 +55,10 @@ export class DomHud {
 		this.spEl.style.width = `${player.sp}%`;
 		// Always scale against baseMax so temporary max-HP reduction never looks like a heal.
 		this.bossHpEl.style.width = `${(boss.hp / boss.baseMax) * 100}%`;
-		this.phaseEl.textContent = state.phase2 ? AERON.phases.phase2.label : AERON.phases.phase1.label;
+		this.bossNameEl.textContent = fight.displayName;
+		this.locationNameEl.textContent = fight.locationName;
+		this.locationSubtitleEl.textContent = fight.locationSubtitle;
+		this.phaseEl.textContent = state.phase2 ? fight.phases.phase2.label : fight.phases.phase1.label;
 
 		this.slotSpellNameEl.textContent = spell.displayName;
 		this.slotSpellCastsEl.textContent = String(spellState.remainingCasts);
