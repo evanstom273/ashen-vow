@@ -1,6 +1,8 @@
 import { clamp, TAU } from '../constants.ts';
+import { getAreaDefinition } from '../content/areas.ts';
 import { getFightDefinition } from '../content/fights.ts';
-import type { BossState, FightId, GameMode, Hazard } from '../types.ts';
+import { getArtTheme } from './artThemes.ts';
+import type { AreaId, BossState, FightId, GameMode, Hazard } from '../types.ts';
 import { drawCircle, drawLine } from './primitives.ts';
 
 function drawSanctum(ctx: CanvasRenderingContext2D, time: number): void {
@@ -151,9 +153,14 @@ function drawOrrery(ctx: CanvasRenderingContext2D, time: number): void {
 		ctx.restore();
 	}
 }
-export function drawArena(ctx: CanvasRenderingContext2D, time: number, fightId: FightId): void {
-	if (getFightDefinition(fightId).visuals.arena === 'orrery') drawOrrery(ctx, time);
-	else drawSanctum(ctx, time);
+const ARENA_DRAWERS = {
+	sanctum: drawSanctum,
+	orrery: drawOrrery,
+} as const;
+
+export function drawArena(ctx: CanvasRenderingContext2D, time: number, areaId: AreaId): void {
+	const area = getAreaDefinition(areaId);
+	ARENA_DRAWERS[area.artTheme](ctx, time);
 }
 
 export function drawBossTelegraph(ctx: CanvasRenderingContext2D, boss: BossState, mode: GameMode, time: number, fightId: FightId): void {
@@ -245,11 +252,11 @@ export function drawHazards(ctx: CanvasRenderingContext2D, hazards: Hazard[], fi
 	}
 }
 
-export function drawAtmosphericDust(ctx: CanvasRenderingContext2D, time: number, fightId: FightId): void {
-	const vael = fightId === 'vael';
-	for (let i = 0; i < (vael ? 62 : 45); i++) {
+export function drawAtmosphericDust(ctx: CanvasRenderingContext2D, time: number, areaId: AreaId): void {
+	const theme = getArtTheme(getAreaDefinition(areaId).artTheme);
+	for (let i = 0; i < theme.dustCount; i++) {
 		const x = (i * 137.2 + Math.sin(time * 0.3 + i) * 15) % 1100;
-		const y = (i * 73 - time * (vael ? 7 + (i % 5) : 4 + (i % 4)) + 85000) % 850;
-		drawCircle(ctx, x, y, vael && i % 9 === 0 ? 1.8 : 1, vael ? '#b7dadd38' : '#c7cba133');
+		const y = (i * 73 - time * (theme.dustSpeed + (i % 5)) + 85000) % 850;
+		drawCircle(ctx, x, y, theme.id === 'orrery' && i % 9 === 0 ? 1.8 : 1, theme.dustColor);
 	}
 }
