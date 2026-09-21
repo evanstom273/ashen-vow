@@ -5,9 +5,9 @@ import { getArtTheme } from './artThemes.ts';
 import {
 	drawArena,
 	drawAtmosphericDust,
-	drawBossTelegraph,
-	drawHazards,
+		drawHazards,
 } from './drawArena.ts';
+import { drawBossTelegraph } from './bossTelegraphs.ts';
 import { getEquippedSpellDefinition } from '../state/spellState.ts';
 import {
 	drawChargeRing,
