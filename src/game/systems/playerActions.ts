@@ -10,6 +10,7 @@ import { PLAYER_TUNING } from '../content/playerDefaults.ts';
 import { spawnBurst } from '../effects/particles.ts';
 import type { GameState, PlayerAction, StickInput } from '../types.ts';
 import type { CombatContext } from './combat.ts';
+import { findNearestWorldEnemy } from './worldEnemies.ts';
 
 export interface PlayerActionContext extends CombatContext {
 	onPause: () => void;
@@ -46,7 +47,7 @@ export function handlePlayerAction(ctx: PlayerActionContext, action: PlayerActio
 		audio.play(420, 0.08, 'sine', 0.03);
 	}
 
-	if (action === 'castStart' && state.scene.kind === 'combat' && player.cd <= 0 && player.roll <= 0 && player.heal <= 0 && canCastEquippedSpell(state)) {
+	if (action === 'castStart' && (state.scene.kind === 'combat' || state.scene.kind === 'world') && player.cd <= 0 && player.roll <= 0 && player.heal <= 0 && canCastEquippedSpell(state)) {
 		state.charging = true;
 		state.charge = 0;
 	}
@@ -68,12 +69,17 @@ export function releaseCast(ctx: CombatContext): void {
 
 	state.charging = false;
 	state.player.swing = 0.24;
-	if (state.scene.kind !== 'combat' || !canCastEquippedSpell(state)) return;
+	if ((state.scene.kind !== 'combat' && state.scene.kind !== 'world') || !canCastEquippedSpell(state)) return;
 
 	const spell = getEquippedSpellDefinition(state);
 	const powered = isSpellCharged(spell, state.charge);
 	consumeEquippedSpellCast(state);
-	const angle = Math.atan2(state.boss.y - state.player.y, state.boss.x - state.player.x);
+	const worldTarget = state.scene.kind === 'world' ? findNearestWorldEnemy(state, 720) : null;
+	const angle = state.scene.kind === 'combat'
+		? Math.atan2(state.boss.y - state.player.y, state.boss.x - state.player.x)
+		: worldTarget
+			? Math.atan2(worldTarget.y - state.player.y, worldTarget.x - state.player.x)
+			: state.player.angle;
 	state.shots.push({
 		x: state.player.x,
 		y: state.player.y,
