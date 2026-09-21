@@ -71,9 +71,11 @@ export function hitBoss(
 	boss.hp = Math.max(0, boss.hp - damage);
 	if (resolved.flash) {
 		boss.flash = 0.12;
+		boss.hitReact = 0.16;
 	}
 	spawnBurst(state, boss.x, boss.y, resolved.particleColor, resolved.particles, resolved.particleSpeed);
 	state.shake = Math.max(state.shake, resolved.shake);
+	state.hitStop = Math.max(state.hitStop, damage >= 30 ? 0.055 : 0.035);
 	if (resolved.audio) {
 		audio.play(90, 0.16, 'triangle', 0.08);
 	}
@@ -90,6 +92,8 @@ export function hurtPlayer(ctx: CombatContext, damage: number): void {
 
 	player.hp = Math.max(0, player.hp - damage);
 	player.inv = PLAYER_TUNING.invulnerabilityAfterHit;
+	player.hitReact = 0.2;
+	state.hitStop = Math.max(state.hitStop, 0.05);
 	state.shake = 9;
 	spawnBurst(state, player.x, player.y, '#b44e3e', 20, 160);
 	audio.play(65, 0.25, 'sawtooth', 0.04);
