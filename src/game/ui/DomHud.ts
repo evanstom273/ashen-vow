@@ -20,6 +20,7 @@ function $(id: string): HTMLElement {
 
 export class DomHud {
 	private readonly noticeEl = $('notice');
+	private readonly interactionPromptEl = $('interactionPrompt');
 	private readonly hpEl = $('hp') as HTMLElement;
 	private readonly spEl = $('sp') as HTMLElement;
 	private readonly stateEl = $('state');
@@ -33,6 +34,11 @@ export class DomHud {
 	private readonly slotSpellIndexEl = $('slotSpellIndex');
 	private readonly slotFlasksEl = $('slotFlasks');
 	private readonly slotRightEl = $('slotRight');
+
+	setInteractionPrompt(message: string | null): void {
+		this.interactionPromptEl.textContent = message ?? '';
+		document.body.classList.toggle('near-interaction', Boolean(message));
+	}
 
 	announceWithTimer(state: GameState, message: string, duration = 2): void {
 		this.noticeEl.textContent = message;
