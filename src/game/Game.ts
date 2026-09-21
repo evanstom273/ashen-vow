@@ -215,6 +215,7 @@ export class Game {
 		const from = (this.state.scene.kind === 'dead' || this.state.scene.kind === 'victory')
 			? { x: viewport.w / 2, y: viewport.h / 2 }
 			: this.renderer.getActorScreenPosition(this.state);
+		this.scenes.transition('transition', this.state.currentAreaId);
 		await this.overlay.closeIris(from.x, from.y, 'THE ASHEN WILDS');
 		this.enterWorld(spawnId);
 		await wait(100);
