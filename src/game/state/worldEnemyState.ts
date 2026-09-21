@@ -90,6 +90,7 @@ export function createWorldEnemyStates(configs: Record<string, GeneratedEnemyCon
 			lastKnownY: spawn.position.y,
 			hitFlash: 0,
 			deathProgress: 0,
+			runeGranted: false,
 		};
 	});
 }
