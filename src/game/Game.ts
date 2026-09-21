@@ -27,7 +27,6 @@ import { DomHud } from './ui/DomHud.ts';
 import { OverlayController } from './ui/OverlayController.ts';
 import { restAtCheckpoint, reviveAtCheckpoint } from './world/checkpoints.ts';
 import {
-	isInsideAeronGate,
 	isNearAeronGate,
 	isNearGrace,
 	resolveOverworldCollisions,
@@ -45,6 +44,7 @@ export class Game {
 	private readonly renderer: CanvasRenderer;
 	private readonly input: InputSystem;
 	private lastFrameTime = 0;
+	private sprinting = false;
 
 	constructor(canvas: HTMLCanvasElement) {
 		this.renderer = new CanvasRenderer(canvas);
@@ -106,6 +106,7 @@ export class Game {
 	}
 
 	private enterWorld(spawnId: string): void {
+		this.sprinting = false;
 		if (this.state.player.hp <= 0) reviveAtCheckpoint(this.state);
 		this.state.currentAreaId = 'ashen-wilds';
 		this.positionPlayer('ashen-wilds', spawnId);
@@ -129,18 +130,21 @@ export class Game {
 	}
 
 	private beginCombatAttempt(preserveResources: boolean): void {
+		this.sprinting = false;
 		this.audio.init();
 		resetCombatState(this.state, preserveResources);
 		this.state.attempts += 1;
 		this.scenes.enterCombat(this.state.currentAreaId);
 		this.overlay.setGameplayScene('combat');
 		this.hud.setInteractionPrompt(null);
+		this.hud.setContextAction('roll');
 		this.hud.sync(this.state);
 		this.announce(getFightDefinition(this.state.fightId).introAnnouncement, 2.5);
 		this.lastFrameTime = performance.now();
 	}
 
 	private returnToMenu(): void {
+		this.sprinting = false;
 		this.state.charging = false;
 		this.state.charge = 0;
 		this.state.encounterOriginAreaId = null;
@@ -181,6 +185,7 @@ export class Game {
 		}
 
 		const inWorld = this.state.scene.kind === 'world';
+		this.sprinting = false;
 		this.scenes.transition('pause', this.state.currentAreaId);
 		this.input.clearKeys();
 		this.state.charging = false;
@@ -190,6 +195,7 @@ export class Game {
 	}
 
 	private end(win: boolean): void {
+		this.sprinting = false;
 		this.state.charging = false;
 		const returnToWorld = this.state.encounterOriginAreaId === 'ashen-wilds';
 		if (win) {
@@ -225,23 +231,64 @@ export class Game {
 	private updateWorldInteractionPrompt(): void {
 		if (this.state.scene.kind !== 'world') {
 			this.hud.setInteractionPrompt(null);
+			this.hud.setContextAction('roll');
 			return;
 		}
 		if (isNearGrace(this.state.player)) {
-			this.hud.setInteractionPrompt('F / A · REST AT GRACE');
+			this.hud.setInteractionPrompt('TAP CENTER / F / A · REST AT GRACE');
+			this.hud.setContextAction('grace');
 			return;
 		}
-		if (isNearAeronGate(this.state.player) && !this.state.world.bosses.aeron.alive) {
-			this.hud.setInteractionPrompt('THE HOLLOW KING IS SLAIN · REST AT GRACE TO RESTORE');
+		if (isNearAeronGate(this.state.player)) {
+			if (this.state.world.bosses.aeron.alive) {
+				this.hud.setInteractionPrompt('TAP CENTER / F / A · ENTER THE FORT');
+				this.hud.setContextAction('gate');
+			} else {
+				this.hud.setInteractionPrompt('THE HOLLOW KING IS SLAIN · REST AT GRACE TO RESTORE');
+				this.hud.setContextAction('blocked');
+			}
 			return;
 		}
 		this.hud.setInteractionPrompt(null);
+		this.hud.setContextAction('roll');
+	}
+
+	private performWorldInteraction(): boolean {
+		if (this.state.scene.kind !== 'world') return false;
+		if (isNearGrace(this.state.player)) {
+			this.sprinting = false;
+			this.restAtGrace();
+			return true;
+		}
+		if (isNearAeronGate(this.state.player)) {
+			this.sprinting = false;
+			if (this.state.world.bosses.aeron.alive) {
+				this.startFight('aeron', 'ashen-wilds', true);
+			} else {
+				this.announce('THE HOLLOW KING IS SLAIN · REST AT GRACE TO RESTORE', 2.2);
+			}
+			return true;
+		}
+		return false;
 	}
 
 	private onAction(action: PlayerAction): void {
-		if (action === 'interact') {
-			if (this.state.scene.kind === 'world' && isNearGrace(this.state.player)) this.restAtGrace();
+		if (action === 'sprintStart') {
+			if (this.state.scene.kind === 'world' && (isNearGrace(this.state.player) || isNearAeronGate(this.state.player))) return;
+			if (this.state.scene.kind === 'world' || this.state.scene.kind === 'combat') this.sprinting = true;
 			return;
+		}
+		if (action === 'sprintEnd') {
+			this.sprinting = false;
+			return;
+		}
+		if (action === 'interact') {
+			this.performWorldInteraction();
+			return;
+		}
+		if (action === 'contextAction') {
+			if (this.performWorldInteraction()) return;
+			action = 'dodge';
 		}
 
 		handlePlayerAction(
@@ -265,16 +312,19 @@ export class Game {
 		updateSpellCooldowns(this.state, dt);
 
 		const movement = this.input.getMovementInput();
-		updatePlayerMovement(this.state, movement, dt, 0.45);
+		const moving = Math.hypot(movement.x, movement.y) > 0.12;
+		const sprinting = this.sprinting && moving && this.state.player.sp > 0;
+		if (sprinting) {
+			this.state.player.sp = Math.max(0, this.state.player.sp - 12 * dt);
+			this.state.player.regen = Math.max(this.state.player.regen, 0.28);
+			if (this.state.player.sp <= 0) this.sprinting = false;
+		}
+		updatePlayerMovement(this.state, movement, dt, 0.45 * (sprinting ? 1.65 : 1));
 		constrainToArea(this.state.player, 'ashen-wilds');
 		resolveOverworldCollisions(this.state.player);
 
 		this.updateWorldInteractionPrompt();
 		this.hud.sync(this.state);
-
-		if (isInsideAeronGate(this.state.player) && this.state.world.bosses.aeron.alive) {
-			this.startFight('aeron', 'ashen-wilds', true);
-		}
 	}
 
 	private updateCombat(dt: number): void {
@@ -285,7 +335,14 @@ export class Game {
 		updateSpellCooldowns(this.state, dt);
 
 		const movement = this.input.getMovementInput();
-		updatePlayerMovement(this.state, movement, dt);
+		const moving = Math.hypot(movement.x, movement.y) > 0.12;
+		const sprinting = this.sprinting && moving && this.state.player.sp > 0;
+		if (sprinting) {
+			this.state.player.sp = Math.max(0, this.state.player.sp - 14 * dt);
+			this.state.player.regen = Math.max(this.state.player.regen, 0.3);
+			if (this.state.player.sp <= 0) this.sprinting = false;
+		}
+		updatePlayerMovement(this.state, movement, dt, sprinting ? 1.42 : 1);
 		constrainToArea(this.state.player, this.state.currentAreaId);
 
 		updateBoss(

@@ -41,6 +41,42 @@ export class SlotControls {
 		const action = button.dataset.action as PlayerAction | undefined;
 		if (!action || button.disabled) return;
 
+		if (action === 'contextAction') {
+			let holdTimer: ReturnType<typeof setTimeout> | null = null;
+			let sprinting = false;
+			let activePointer: number | null = null;
+
+			const finish = (triggerTap: boolean): void => {
+				if (activePointer === null) return;
+				if (holdTimer) clearTimeout(holdTimer);
+				holdTimer = null;
+				const pointerId = activePointer;
+				activePointer = null;
+				if (button.hasPointerCapture(pointerId)) button.releasePointerCapture(pointerId);
+				button.classList.remove('is-pressed', 'is-sprinting');
+				if (sprinting) this.onAction('sprintEnd');
+				else if (triggerTap) this.onAction('contextAction');
+				sprinting = false;
+			};
+
+			button.addEventListener('pointerdown', (event) => {
+				event.preventDefault();
+				activePointer = event.pointerId;
+				button.setPointerCapture(event.pointerId);
+				button.classList.add('is-pressed');
+				holdTimer = setTimeout(() => {
+					if (activePointer === null) return;
+					sprinting = true;
+					button.classList.add('is-sprinting');
+					this.onAction('sprintStart');
+				}, 260);
+			});
+			button.addEventListener('pointerup', () => finish(true));
+			button.addEventListener('pointercancel', () => finish(false));
+			button.addEventListener('lostpointercapture', () => finish(false));
+			return;
+		}
+
 		if (action === 'castStart') {
 			button.addEventListener('pointerdown', (event) => {
 				event.preventDefault();

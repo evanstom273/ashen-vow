@@ -55,6 +55,11 @@
 				<span class="slot-tag">L</span>
 				<span class="slot-empty">—</span>
 			</button>
+			<button type="button" class="slot slot-context" id="slotContext" data-action="contextAction" aria-label="Roll; hold to sprint">
+				<span class="slot-tag" id="slotContextTag">Roll</span>
+				<span class="slot-title" id="slotContextTitle">Dodge</span>
+				<small class="slot-meta" id="slotContextMeta">tap · hold sprint</small>
+			</button>
 			<button type="button" class="slot slot-right" id="slotRight" data-action="castStart" aria-label="Right hand cast">
 				<span class="slot-tag">R</span>
 				<span class="slot-title">Cast</span>
@@ -68,12 +73,10 @@
 		</div>
 		<div id="touch">
 			<div class="touch-left">
-				<button type="button" id="interactButton" class="touch-interact" data-action="interact" aria-label="Interact">Interact</button>
 				<div class="move-stick" aria-label="Move">
 					<div class="move-stick-base"></div>
 					<div class="move-stick-knob"></div>
 				</div>
-				<button type="button" class="touch-dodge" data-action="dodge" aria-label="Dodge">Roll</button>
 			</div>
 		</div>
 		<section id="overlay">

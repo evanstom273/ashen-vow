@@ -141,7 +141,7 @@ const APPROACH_PROPS: WorldProp[] = [
 	{ id: 'wall-south', kind: 'wall', x: 2820, y: 1640, sortY: 1700, scale: 1, collisionRect: { x: 2790, y: 1500, w: 120, h: 500 } },
 	{ id: 'tower-north', kind: 'tower', x: 2800, y: 1260, sortY: 1320, scale: 1.1, collisionRadius: 58 },
 	{ id: 'tower-south', kind: 'tower', x: 2800, y: 1540, sortY: 1600, scale: 1.1, collisionRadius: 58 },
-	{ id: 'aeron-gate', kind: 'gate', x: AERON_GATE_POSITION.x, y: AERON_GATE_POSITION.y, sortY: 1435, scale: 1 },
+	{ id: 'aeron-gate', kind: 'gate', x: AERON_GATE_POSITION.x, y: AERON_GATE_POSITION.y, sortY: 1435, scale: 1, collisionRect: { x: 2768, y: 1344, w: 64, h: 112 } },
 ];
 
 export const WORLD_PROPS: readonly WorldProp[] = [...buildForest(), ...APPROACH_PROPS];
