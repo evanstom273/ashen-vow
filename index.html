@@ -40,7 +40,8 @@
 			<span><kbd>SPACE</kbd> Dodge</span>
 			<span><kbd>Q</kbd> Cycle spell</span>
 			<span><kbd>K</kbd> Right hand <em>hold to cast</em></span>
-			<span><kbd>E</kbd> Flask</span>
+			<span><kbd>E</kbd> Use utility</span>
+			<span><kbd>C</kbd> Cycle utility</span>
 			<span><kbd>F</kbd> Interact</span>
 			<span class="controller">Controller supported</span>
 		</footer>
@@ -65,10 +66,11 @@
 				<span class="slot-title">Cast</span>
 				<small class="slot-meta">hold</small>
 			</button>
-			<button type="button" class="slot slot-consumable" data-action="useConsumable" aria-label="Use flask">
-				<span class="slot-tag">✦</span>
-				<span class="slot-title">Flask</span>
+			<button type="button" class="slot slot-consumable" id="slotUtility" data-action="activateUtility" aria-label="Utility slot: tap to cycle, hold to use">
+				<span class="slot-tag" id="slotUtilityTag">✦</span>
+				<span class="slot-title" id="slotUtilityTitle">Flask</span>
 				<strong class="slot-count" id="slotFlasks">3</strong>
+				<small class="slot-meta" id="slotUtilityMeta">tap cycle · hold use</small>
 			</button>
 		</div>
 		<div id="touch">
@@ -77,6 +79,31 @@
 					<div class="move-stick-base"></div>
 					<div class="move-stick-knob"></div>
 				</div>
+			</div>
+		</div>
+		<section id="bossDialogue" class="boss-dialogue" hidden aria-live="polite">
+			<small id="bossDialogueName"></small>
+			<p id="bossDialogueText"></p>
+		</section>
+		<section id="graceMenu" class="grace-menu" hidden aria-label="Rest menu">
+			<div class="grace-card">
+				<small>REST AT GRACE</small>
+				<h2>Choose Travel Form</h2>
+				<p>Your chosen form can be summoned from the utility slot.</p>
+				<div class="form-choices">
+					<button type="button" data-form="raven">Ashen Raven<small>spectral corvid</small></button>
+					<button type="button" data-form="wolf">Dusk Wolf<small>swift ash hound</small></button>
+					<button type="button" data-form="feline">Sixfold Cat<small>six-legged mythical feline</small></button>
+				</div>
+				<button type="button" id="closeGraceMenu" class="menuButton">LEAVE GRACE</button>
+			</div>
+		</section>
+		<div id="transitionCurtain" class="transition-curtain" aria-hidden="true">
+			<div id="irisHole" class="iris-hole"></div>
+			<div id="loadingCard" class="loading-card" hidden>
+				<small>ASHEN VOW</small>
+				<strong id="loadingArea">LOADING</strong>
+				<span>✧</span>
 			</div>
 		</div>
 		<section id="overlay">
@@ -90,7 +117,7 @@
 				</div>
 				<button id="menu" class="menuButton" hidden>RETURN TO TITLE</button>
 				<div class="tip" id="tip">Two bosses. Two arenas. One procedural visual language.</div>
-				<div class="startControls">WASD / stick · Move &nbsp; Space · Dodge &nbsp; Q · Cycle spell<br>K · Right hand (hold to cast) &nbsp; E · Flask &nbsp; F · Interact<br><small>Gamepad: stick · B / ○ dodge · L1 cycle · R2 cast · X / □ flask · A interact</small></div>
+				<div class="startControls">WASD / stick · Move &nbsp; Space · Dodge &nbsp; Q · Cycle spell<br>K · Right hand (hold to cast) &nbsp; E · Flask &nbsp; F · Interact<br><small>Gamepad: stick · B / ○ dodge · L1 spell · R2 cast · X / □ utility · A interact</small></div>
 			</div>
 		</section>
 	</main>
