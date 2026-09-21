@@ -18,10 +18,13 @@ function modeForScene(scene: SceneKind): GameState['mode'] {
 }
 
 export class SceneController {
-	constructor(
-		private readonly state: GameState,
-		private readonly events: GameEventBus,
-	) {}
+	private readonly state: GameState;
+	private readonly events: GameEventBus;
+
+	constructor(state: GameState, events: GameEventBus) {
+		this.state = state;
+		this.events = events;
+	}
 
 	transition(to: SceneKind, areaId: AreaId | null = this.state.scene.areaId): void {
 		const from = this.state.scene.kind;
