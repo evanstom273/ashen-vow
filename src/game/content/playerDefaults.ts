@@ -19,7 +19,7 @@ export const PLAYER_TUNING = {
 		staminaCost: 25,
 		duration: 0.34,
 		invulnerability: 0.34,
-		speed: 420,
+		speed: 141.176,
 		regenLock: 0.65,
 		cooldownGate: 0.2,
 	},
