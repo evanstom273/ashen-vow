@@ -2,6 +2,7 @@ import { MAX_DELTA_TIME } from './constants.ts';
 import { AudioManager } from './audio/AudioManager.ts';
 import { getAreaForFight, getAreaSpawn } from './content/areas.ts';
 import { getFightDefinition } from './content/fights.ts';
+import { getEnemyDefinition } from './content/enemies.ts';
 import { PLAYER_TUNING } from './content/playerDefaults.ts';
 import { getTravelFormDefinition } from './content/travelForms.ts';
 import { decayShake, spawnBurst, updateParticles } from './effects/particles.ts';
@@ -288,6 +289,10 @@ export class Game {
 		this.bossIntroActive = false;
 
 		if (win) {
+			if (this.state.postFight) return;
+			const fight = getFightDefinition(this.state.fightId);
+			const enemy = getEnemyDefinition(fight.enemyId);
+			this.state.runes += enemy.runeReward;
 			markBossDefeated(this.state.world, this.state.fightId);
 			this.events.emit({ type: 'bossDefeated', fightId: this.state.fightId });
 			this.state.postFight = true;
