@@ -34,6 +34,35 @@ export class DomHud {
 	private readonly slotSpellIndexEl = $('slotSpellIndex');
 	private readonly slotFlasksEl = $('slotFlasks');
 	private readonly slotRightEl = $('slotRight');
+	private readonly slotContextEl = $('slotContext');
+	private readonly slotContextTagEl = $('slotContextTag');
+	private readonly slotContextTitleEl = $('slotContextTitle');
+	private readonly slotContextMetaEl = $('slotContextMeta');
+
+	setContextAction(mode: 'roll' | 'grace' | 'gate' | 'blocked'): void {
+		this.slotContextEl.classList.toggle('is-context', mode !== 'roll');
+		if (mode === 'grace') {
+			this.slotContextTagEl.textContent = 'Grace';
+			this.slotContextTitleEl.textContent = 'Rest';
+			this.slotContextMetaEl.textContent = 'tap';
+			this.slotContextEl.setAttribute('aria-label', 'Rest at grace');
+		} else if (mode === 'gate') {
+			this.slotContextTagEl.textContent = 'Enter';
+			this.slotContextTitleEl.textContent = 'Fort';
+			this.slotContextMetaEl.textContent = 'tap';
+			this.slotContextEl.setAttribute('aria-label', 'Enter Aeron\'s fort');
+		} else if (mode === 'blocked') {
+			this.slotContextTagEl.textContent = 'Fort';
+			this.slotContextTitleEl.textContent = 'Silent';
+			this.slotContextMetaEl.textContent = 'rest to restore';
+			this.slotContextEl.setAttribute('aria-label', 'The Hollow King is slain; rest at grace to restore him');
+		} else {
+			this.slotContextTagEl.textContent = 'Roll';
+			this.slotContextTitleEl.textContent = 'Dodge';
+			this.slotContextMetaEl.textContent = 'tap · hold sprint';
+			this.slotContextEl.setAttribute('aria-label', 'Roll; hold to sprint');
+		}
+	}
 
 	setInteractionPrompt(message: string | null): void {
 		this.interactionPromptEl.textContent = message ?? '';
