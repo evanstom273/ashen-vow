@@ -1,13 +1,17 @@
 import type { FightId, WorldState } from '../types.ts';
+import { generateEnemyConfigs } from './worldEnemyState.ts';
 
 const FIGHT_IDS: readonly FightId[] = ['aeron', 'vael'];
 
 export function createInitialWorldState(): WorldState {
+	const enemySeed = Math.floor(Math.random() * 0xffffffff) >>> 0;
 	return {
 		bosses: {
 			aeron: { alive: true, defeatedCount: 0 },
 			vael: { alive: true, defeatedCount: 0 },
 		},
+		enemySeed,
+		enemyConfigs: generateEnemyConfigs(enemySeed),
 		flags: {},
 		activeCheckpointId: null,
 	};
