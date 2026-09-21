@@ -60,6 +60,7 @@ export function createInitialGameState(): GameState {
 		world: createInitialWorldState(),
 		attempts: 0,
 		runes: 0,
+		pendingRuneReward: 0,
 		time: 0,
 		player: createPlayerState(),
 		boss: createBossState(initialFight),
@@ -124,6 +125,7 @@ export function resetCombatState(state: GameState, preserveResources = false): v
 	state.hitStop = 0;
 	state.postFight = false;
 	state.bossDeathProgress = 0;
+	state.pendingRuneReward = 0;
 	state.arenaExitActive = false;
 	if (!preserveResources) replenishSpellsAtRest(state);
 }
