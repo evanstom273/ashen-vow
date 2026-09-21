@@ -124,7 +124,7 @@ export class Game {
 	}
 
 	private togglePause(): void {
-		if (this.state.scene.kind !== 'combat' && this.state.scene.kind !== 'pause') return;
+		if (!['combat', 'world', 'pause'].includes(this.state.scene.kind)) return;
 
 		if (this.state.scene.kind === 'pause') {
 			this.start();
