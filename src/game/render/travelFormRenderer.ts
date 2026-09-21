@@ -15,43 +15,261 @@ function lerp(a: number, b: number, t: number): number {
 	return a + (b - a) * t;
 }
 
-function drawSpectralTrail(
-	ctx: CanvasRenderingContext2D,
-	time: number,
-	accent: string,
-	scale: number,
-	morph: number,
-): void {
+function drawShadow(ctx: CanvasRenderingContext2D, length: number, width: number, alpha = 0.42): void {
 	ctx.save();
-	ctx.globalAlpha = 0.32 * morph;
-	for (let i = 0; i < 4; i++) {
-		const drift = 18 + i * 10;
-		const wobble = Math.sin(time * 7 + i) * 4;
-		drawCircle(ctx, wobble, drift * morph, (7 - i) * scale * (0.45 + morph * 0.55), accent);
+	ctx.globalAlpha = alpha;
+	ctx.fillStyle = '#020706';
+	ctx.beginPath();
+	ctx.ellipse(2, length * 0.18, width, length * 0.42, 0, 0, Math.PI * 2);
+	ctx.fill();
+	ctx.restore();
+}
+
+function drawSpectralTrail(ctx: CanvasRenderingContext2D, time: number, accent: string, scale: number, morph: number): void {
+	ctx.save();
+	ctx.globalAlpha = 0.26 * morph;
+	for (let i = 0; i < 5; i++) {
+		const drift = 26 + i * 13;
+		const wobble = Math.sin(time * 7.5 + i * 1.4) * (3 + i);
+		drawCircle(ctx, wobble, drift * morph, (6.5 - i * 0.8) * scale, accent);
 	}
 	ctx.restore();
 }
 
-function drawMorphAura(
-	ctx: CanvasRenderingContext2D,
-	time: number,
-	accent: string,
-	morph: number,
-): void {
+function drawMorphAura(ctx: CanvasRenderingContext2D, time: number, accent: string, morph: number): void {
 	if (morph <= 0 || morph >= 1) return;
 	ctx.save();
-	const pulse = 0.45 + Math.sin(time * 16) * 0.08;
-	ctx.globalAlpha = (1 - Math.abs(morph - 0.5) * 1.55) * 0.42;
-	for (let i = 0; i < 9; i++) {
-		const angle = i * 2.399 + time * 0.9;
-		const radius = 18 + i * 3 + pulse * 8;
-		drawCircle(
-			ctx,
-			Math.cos(angle) * radius,
-			Math.sin(angle) * radius * 0.65,
-			1.8 + (i % 3),
-			accent,
-		);
+	ctx.globalAlpha = (1 - Math.abs(morph - 0.5) * 1.65) * 0.36;
+	for (let i = 0; i < 10; i++) {
+		const angle = i * 2.399 + time * 0.8;
+		const radius = 18 + i * 2.5 + Math.sin(time * 13 + i) * 2;
+		drawCircle(ctx, Math.cos(angle) * radius, Math.sin(angle) * radius * 0.62, 1.5 + (i % 3), accent);
+	}
+	ctx.restore();
+}
+
+function fillOutlinedPath(
+	ctx: CanvasRenderingContext2D,
+	fill: string,
+	stroke: string,
+	lineWidth: number,
+	build: () => void,
+): void {
+	ctx.beginPath();
+	build();
+	ctx.fillStyle = fill;
+	ctx.strokeStyle = stroke;
+	ctx.lineWidth = lineWidth;
+	ctx.lineJoin = 'round';
+	ctx.fill();
+	ctx.stroke();
+}
+
+function drawPaw(ctx: CanvasRenderingContext2D, x: number, y: number, rotation: number, color: string, outline: string, scale = 1): void {
+	ctx.save();
+	ctx.translate(x, y);
+	ctx.rotate(rotation);
+	fillOutlinedPath(ctx, color, outline, 1.5, () => {
+		ctx.ellipse(0, 0, 5.2 * scale, 7 * scale, 0, 0, Math.PI * 2);
+	});
+	ctx.restore();
+}
+
+function drawWolf(ctx: CanvasRenderingContext2D, player: PlayerState, time: number, rawMorph: number): void {
+	const morph = ease(rawMorph);
+	const form = getTravelFormDefinition('wolf');
+	const step = player.moving ? Math.sin(time * (player.sprinting ? 14.5 : 9.2)) : 0;
+	const bob = player.moving ? Math.abs(step) * 2.6 * morph : 0;
+	const stride = step * lerp(1.5, player.sprinting ? 10 : 7, morph);
+	const bodyL = lerp(24, 54, morph);
+	const shoulderW = lerp(12, 25, morph);
+	const hipW = lerp(11, 21, morph);
+
+	ctx.save();
+	ctx.translate(player.x, player.y - bob);
+	ctx.rotate(player.angle + Math.PI / 2 + step * 0.022 * morph);
+	drawShadow(ctx, bodyL, shoulderW * 1.2, 0.5);
+	drawSpectralTrail(ctx, time, form.accentSoft, 1.05, morph);
+	drawMorphAura(ctx, time, form.accent, morph);
+
+	// Rear legs first: they belong underneath the torso.
+	const rearY = bodyL * 0.28;
+	const rearKick = stride;
+	drawLine(ctx, -hipW * 0.62, rearY - 5, -hipW * 0.95 - rearKick, rearY + lerp(8, 25, morph), '#313a35', lerp(3, 7, morph));
+	drawLine(ctx, hipW * 0.62, rearY - 5, hipW * 0.95 + rearKick, rearY + lerp(8, 25, morph), '#313a35', lerp(3, 7, morph));
+	drawPaw(ctx, -hipW * 0.95 - rearKick, rearY + lerp(9, 27, morph), -0.1, '#59645d', '#202823', morph);
+	drawPaw(ctx, hipW * 0.95 + rearKick, rearY + lerp(9, 27, morph), 0.1, '#59645d', '#202823', morph);
+
+	// Tail tucked under body.
+	ctx.save();
+	ctx.strokeStyle = '#465149';
+	ctx.lineWidth = lerp(3, 8, morph);
+	ctx.lineCap = 'round';
+	ctx.beginPath();
+	ctx.moveTo(0, bodyL * 0.44);
+	ctx.quadraticCurveTo(-8 - step * 5, bodyL * 0.72, 8 + step * 9, bodyL * 0.98);
+	ctx.stroke();
+	ctx.restore();
+
+	// Torso is pear-shaped rather than an oval.
+	fillOutlinedPath(ctx, '#46514b', '#9ca59d', lerp(1, 2, morph), () => {
+		ctx.moveTo(-shoulderW * 0.78, -bodyL * 0.28);
+		ctx.quadraticCurveTo(-shoulderW, -bodyL * 0.03, -hipW * 0.7, bodyL * 0.34);
+		ctx.quadraticCurveTo(0, bodyL * 0.54, hipW * 0.7, bodyL * 0.34);
+		ctx.quadraticCurveTo(shoulderW, -bodyL * 0.03, shoulderW * 0.78, -bodyL * 0.28);
+		ctx.quadraticCurveTo(0, -bodyL * 0.48, -shoulderW * 0.78, -bodyL * 0.28);
+		ctx.closePath();
+	});
+	fillOutlinedPath(ctx, '#66716988', '#0000', 0, () => {
+		ctx.ellipse(-shoulderW * 0.24, -bodyL * 0.16, shoulderW * 0.28, bodyL * 0.18, -0.25, 0, Math.PI * 2);
+	});
+	fillOutlinedPath(ctx, '#26312c88', '#0000', 0, () => {
+		ctx.ellipse(shoulderW * 0.3, bodyL * 0.16, hipW * 0.35, bodyL * 0.22, 0.22, 0, Math.PI * 2);
+	});
+
+	// Front legs over torso edge.
+	const frontY = -bodyL * 0.2;
+	drawLine(ctx, -shoulderW * 0.72, frontY, -shoulderW * 1.02 + stride, frontY + lerp(10, 26, morph), '#59655e', lerp(3, 7, morph));
+	drawLine(ctx, shoulderW * 0.72, frontY, shoulderW * 1.02 - stride, frontY + lerp(10, 26, morph), '#59655e', lerp(3, 7, morph));
+	drawPaw(ctx, -shoulderW * 1.02 + stride, frontY + lerp(11, 28, morph), -0.08, '#737d75', '#2a332f', morph);
+	drawPaw(ctx, shoulderW * 1.02 - stride, frontY + lerp(11, 28, morph), 0.08, '#737d75', '#2a332f', morph);
+
+	// Neck/head/snout.
+	fillOutlinedPath(ctx, '#53605a', '#aeb5ac', lerp(1, 2, morph), () => {
+		ctx.moveTo(-shoulderW * 0.56, -bodyL * 0.3);
+		ctx.lineTo(-lerp(7, 12, morph), -bodyL * 0.56);
+		ctx.lineTo(-lerp(10, 16, morph), -bodyL * 0.76);
+		ctx.lineTo(0, -bodyL * 0.94);
+		ctx.lineTo(lerp(10, 16, morph), -bodyL * 0.76);
+		ctx.lineTo(lerp(7, 12, morph), -bodyL * 0.56);
+		ctx.lineTo(shoulderW * 0.56, -bodyL * 0.3);
+		ctx.closePath();
+	});
+	// Ears.
+	fillOutlinedPath(ctx, '#39443f', '#9ca59d', 1.5, () => {
+		ctx.moveTo(-10 * morph, -bodyL * 0.73);
+		ctx.lineTo(-16 * morph, -bodyL * 1.02);
+		ctx.lineTo(-3 * morph, -bodyL * 0.84);
+		ctx.closePath();
+		ctx.moveTo(10 * morph, -bodyL * 0.73);
+		ctx.lineTo(16 * morph, -bodyL * 1.02);
+		ctx.lineTo(3 * morph, -bodyL * 0.84);
+		ctx.closePath();
+	});
+	// Snout + face.
+	fillOutlinedPath(ctx, '#748078', '#252d29', 1.4, () => {
+		ctx.moveTo(-8 * morph, -bodyL * 0.88);
+		ctx.lineTo(0, -bodyL * 1.12);
+		ctx.lineTo(8 * morph, -bodyL * 0.88);
+		ctx.lineTo(5 * morph, -bodyL * 0.73);
+		ctx.lineTo(-5 * morph, -bodyL * 0.73);
+		ctx.closePath();
+	});
+	if (morph > 0.42) {
+		const a = (morph - 0.42) / 0.58;
+		ctx.globalAlpha = a;
+		drawCircle(ctx, -5, -bodyL * 0.82, 2, '#edf1cf');
+		drawCircle(ctx, 5, -bodyL * 0.82, 2, '#edf1cf');
+		drawCircle(ctx, 0, -bodyL * 1.08, 2.2, '#1a211e');
+		ctx.globalAlpha = 1;
+	}
+	ctx.restore();
+}
+
+function drawFeline(ctx: CanvasRenderingContext2D, player: PlayerState, time: number, rawMorph: number): void {
+	const morph = ease(rawMorph);
+	const form = getTravelFormDefinition('feline');
+	const step = player.moving ? Math.sin(time * (player.sprinting ? 16 : 10.4)) : 0;
+	const bob = player.moving ? Math.abs(step) * 2.9 * morph : 0;
+	const stride = step * lerp(1.5, player.sprinting ? 11 : 7.5, morph);
+	const bodyL = lerp(25, 58, morph);
+	const chestW = lerp(12, 24, morph);
+	const waistW = lerp(9, 16, morph);
+
+	ctx.save();
+	ctx.translate(player.x, player.y - bob);
+	ctx.rotate(player.angle + Math.PI / 2 + step * 0.018 * morph);
+	drawShadow(ctx, bodyL, chestW * 1.15, 0.5);
+	drawSpectralTrail(ctx, time, form.accentSoft, 1.12, morph);
+	drawMorphAura(ctx, time, form.accent, morph);
+
+	// Back pair under body.
+	const backY = bodyL * 0.27;
+	drawLine(ctx, -waistW * 0.72, backY, -waistW * 1.35 - stride, backY + lerp(10, 27, morph), '#493b50', lerp(3, 7, morph));
+	drawLine(ctx, waistW * 0.72, backY, waistW * 1.35 + stride, backY + lerp(10, 27, morph), '#493b50', lerp(3, 7, morph));
+	drawPaw(ctx, -waistW * 1.35 - stride, backY + lerp(11, 29, morph), -0.1, '#765f80', '#33283a', morph);
+	drawPaw(ctx, waistW * 1.35 + stride, backY + lerp(11, 29, morph), 0.1, '#765f80', '#33283a', morph);
+
+	// Long tail behind torso.
+	ctx.save();
+	ctx.strokeStyle = '#66516f';
+	ctx.lineWidth = lerp(3, 7, morph);
+	ctx.lineCap = 'round';
+	ctx.beginPath();
+	ctx.moveTo(0, bodyL * 0.4);
+	ctx.bezierCurveTo(-12, bodyL * 0.7, 17 + step * 4, bodyL * 0.9, 4 + step * 11, bodyL * 1.12);
+	ctx.stroke();
+	ctx.restore();
+
+	// Middle pair, partly tucked behind torso to sell six limbs.
+	const midY = bodyL * 0.02;
+	drawLine(ctx, -chestW * 0.78, midY, -chestW * 1.35 + stride * 0.65, midY + lerp(8, 22, morph), '#5f4d67', lerp(3, 6.5, morph));
+	drawLine(ctx, chestW * 0.78, midY, chestW * 1.35 - stride * 0.65, midY + lerp(8, 22, morph), '#5f4d67', lerp(3, 6.5, morph));
+
+	// Sleek torso with narrow waist.
+	fillOutlinedPath(ctx, '#58465f', '#b89bc7', lerp(1, 2, morph), () => {
+		ctx.moveTo(-chestW * 0.9, -bodyL * 0.3);
+		ctx.quadraticCurveTo(-chestW * 1.05, -bodyL * 0.05, -waistW * 0.64, bodyL * 0.34);
+		ctx.quadraticCurveTo(0, bodyL * 0.5, waistW * 0.64, bodyL * 0.34);
+		ctx.quadraticCurveTo(chestW * 1.05, -bodyL * 0.05, chestW * 0.9, -bodyL * 0.3);
+		ctx.quadraticCurveTo(0, -bodyL * 0.5, -chestW * 0.9, -bodyL * 0.3);
+		ctx.closePath();
+	});
+	fillOutlinedPath(ctx, '#80678b66', '#0000', 0, () => {
+		ctx.ellipse(-chestW * 0.26, -bodyL * 0.15, chestW * 0.3, bodyL * 0.2, -0.3, 0, Math.PI * 2);
+	});
+	fillOutlinedPath(ctx, '#392e3f88', '#0000', 0, () => {
+		ctx.ellipse(chestW * 0.28, bodyL * 0.13, waistW * 0.36, bodyL * 0.24, 0.2, 0, Math.PI * 2);
+	});
+
+	// Front pair in foreground.
+	const frontY = -bodyL * 0.22;
+	drawLine(ctx, -chestW * 0.72, frontY, -chestW * 1.15 + stride, frontY + lerp(11, 27, morph), '#785f82', lerp(3, 7, morph));
+	drawLine(ctx, chestW * 0.72, frontY, chestW * 1.15 - stride, frontY + lerp(11, 27, morph), '#785f82', lerp(3, 7, morph));
+	drawPaw(ctx, -chestW * 1.15 + stride, frontY + lerp(12, 29, morph), -0.1, '#987ca5', '#3d3045', morph);
+	drawPaw(ctx, chestW * 1.15 - stride, frontY + lerp(12, 29, morph), 0.1, '#987ca5', '#3d3045', morph);
+
+	// Finish middle paws in front edge but below head.
+	drawPaw(ctx, -chestW * 1.35 + stride * 0.65, midY + lerp(9, 24, morph), -0.12, '#826d8d', '#382c40', morph * 0.95);
+	drawPaw(ctx, chestW * 1.35 - stride * 0.65, midY + lerp(9, 24, morph), 0.12, '#826d8d', '#382c40', morph * 0.95);
+
+	// Feline head with cheek flare and ears.
+	fillOutlinedPath(ctx, '#695370', '#c5a9d1', lerp(1, 2, morph), () => {
+		ctx.moveTo(-chestW * 0.58, -bodyL * 0.31);
+		ctx.lineTo(-11 * morph, -bodyL * 0.62);
+		ctx.lineTo(-15 * morph, -bodyL * 0.85);
+		ctx.lineTo(-4 * morph, -bodyL * 0.76);
+		ctx.lineTo(0, -bodyL * 0.94);
+		ctx.lineTo(4 * morph, -bodyL * 0.76);
+		ctx.lineTo(15 * morph, -bodyL * 0.85);
+		ctx.lineTo(11 * morph, -bodyL * 0.62);
+		ctx.lineTo(chestW * 0.58, -bodyL * 0.31);
+		ctx.closePath();
+	});
+	fillOutlinedPath(ctx, '#8c7298', '#43354b', 1.3, () => {
+		ctx.moveTo(-8 * morph, -bodyL * 0.78);
+		ctx.lineTo(0, -bodyL * 1.02);
+		ctx.lineTo(8 * morph, -bodyL * 0.78);
+		ctx.lineTo(5 * morph, -bodyL * 0.65);
+		ctx.lineTo(-5 * morph, -bodyL * 0.65);
+		ctx.closePath();
+	});
+	if (morph > 0.38) {
+		ctx.globalAlpha = (morph - 0.38) / 0.62;
+		drawCircle(ctx, -5, -bodyL * 0.72, 2.2, '#f1dbff');
+		drawCircle(ctx, 5, -bodyL * 0.72, 2.2, '#f1dbff');
+		drawCircle(ctx, 0, -bodyL * 0.98, 2, '#2a2030');
+		ctx.globalAlpha = 1;
 	}
 	ctx.restore();
 }
@@ -59,180 +277,78 @@ function drawMorphAura(
 function drawRaven(ctx: CanvasRenderingContext2D, player: PlayerState, time: number, rawMorph: number): void {
 	const morph = ease(rawMorph);
 	const form = getTravelFormDefinition('raven');
-	const step = player.moving ? Math.sin(time * (player.sprinting ? 15 : 10)) : 0;
-	const bob = player.moving ? Math.abs(step) * 3 * morph : 0;
-	const bodyW = lerp(10, 20, morph);
-	const bodyH = lerp(18, 34, morph);
-	const headY = lerp(-12, -33, morph);
-	const wing = lerp(7, 28 + Math.abs(step) * 10, morph);
-	const legLength = lerp(5, 17, morph);
+	const step = player.moving ? Math.sin(time * (player.sprinting ? 15.5 : 10)) : 0;
+	const bob = player.moving ? Math.abs(step) * 2.2 * morph : 0;
+	const bodyL = lerp(22, 50, morph);
+	const bodyW = lerp(10, 22, morph);
+	const wingBeat = Math.abs(step) * (player.sprinting ? 8 : 4) * morph;
 
 	ctx.save();
 	ctx.translate(player.x, player.y - bob);
-	ctx.rotate(player.angle + Math.PI / 2 + step * 0.04 * morph);
+	ctx.rotate(player.angle + Math.PI / 2 + step * 0.012 * morph);
+	drawShadow(ctx, bodyL, bodyW * 1.25, 0.46);
 	drawSpectralTrail(ctx, time, form.accentSoft, 1, morph);
 	drawMorphAura(ctx, time, form.accent, morph);
 
-	ctx.fillStyle = '#26333b';
-	ctx.strokeStyle = form.accent;
-	ctx.lineWidth = lerp(1, 2, morph);
-	ctx.beginPath();
-	ctx.moveTo(0, -bodyH * 0.86);
-	ctx.quadraticCurveTo(-bodyW * 1.1, -bodyH * 0.35, -bodyW * 0.9, bodyH * 0.42);
-	ctx.quadraticCurveTo(0, bodyH * 0.82, bodyW * 0.9, bodyH * 0.42);
-	ctx.quadraticCurveTo(bodyW * 1.1, -bodyH * 0.35, 0, -bodyH * 0.86);
-	ctx.fill();
-	ctx.stroke();
+	// Tail feathers underneath everything else.
+	fillOutlinedPath(ctx, '#19242a', '#607786', 1.5, () => {
+		ctx.moveTo(-bodyW * 0.55, bodyL * 0.3);
+		ctx.lineTo(-bodyW * 1.08, bodyL * 0.78);
+		ctx.lineTo(-bodyW * 0.35, bodyL * 0.62);
+		ctx.lineTo(0, bodyL * 0.9);
+		ctx.lineTo(bodyW * 0.35, bodyL * 0.62);
+		ctx.lineTo(bodyW * 1.08, bodyL * 0.78);
+		ctx.lineTo(bodyW * 0.55, bodyL * 0.3);
+		ctx.closePath();
+	});
 
-	ctx.beginPath();
-	ctx.moveTo(-bodyW * 0.42, -bodyH * 0.15);
-	ctx.lineTo(-wing, lerp(2, 12 + step * 5, morph));
-	ctx.lineTo(-bodyW * 0.6, bodyH * 0.5);
-	ctx.closePath();
-	ctx.moveTo(bodyW * 0.42, -bodyH * 0.15);
-	ctx.lineTo(wing, lerp(2, 12 - step * 5, morph));
-	ctx.lineTo(bodyW * 0.6, bodyH * 0.5);
-	ctx.closePath();
-	ctx.fillStyle = '#1a252b';
-	ctx.fill();
-	ctx.stroke();
-
-	ctx.beginPath();
-	ctx.moveTo(-lerp(4, 7, morph), headY + 4);
-	ctx.lineTo(0, headY - lerp(4, 10, morph));
-	ctx.lineTo(lerp(4, 8, morph), headY + 5);
-	ctx.closePath();
-	ctx.fillStyle = '#607786';
-	ctx.fill();
-
-	if (morph > 0.45) {
-		const eyeAlpha = (morph - 0.45) / 0.55;
-		ctx.globalAlpha = eyeAlpha;
-		drawCircle(ctx, -3 * morph, headY + 3, 2 * morph, '#d7eef1');
-		drawCircle(ctx, 3 * morph, headY + 3, 2 * morph, '#d7eef1');
-		ctx.globalAlpha = 1;
-	}
-
-	drawLine(ctx, -bodyW * 0.4, bodyH * 0.42, -bodyW * 0.6 - step * 4 * morph, bodyH * 0.42 + legLength, '#8097a3', lerp(2, 3, morph));
-	drawLine(ctx, bodyW * 0.4, bodyH * 0.42, bodyW * 0.6 + step * 4 * morph, bodyH * 0.42 + legLength, '#8097a3', lerp(2, 3, morph));
-	ctx.restore();
-}
-
-function drawWolf(ctx: CanvasRenderingContext2D, player: PlayerState, time: number, rawMorph: number): void {
-	const morph = ease(rawMorph);
-	const form = getTravelFormDefinition('wolf');
-	const step = player.moving ? Math.sin(time * (player.sprinting ? 14 : 9)) : 0;
-	const bob = player.moving ? Math.abs(step) * 3.4 * morph : 0;
-	const bodyW = lerp(11, 21, morph);
-	const bodyH = lerp(18, 34, morph);
-	const headY = lerp(-12, -35, morph);
-	const stride = step * lerp(2, player.sprinting ? 10 : 7, morph);
-	const limbLength = lerp(7, 23, morph);
-
+	// Far wing.
 	ctx.save();
-	ctx.translate(player.x, player.y - bob);
-	ctx.rotate(player.angle + Math.PI / 2 + step * 0.035 * morph);
-	drawSpectralTrail(ctx, time, form.accentSoft, 1.1, morph);
-	drawMorphAura(ctx, time, form.accent, morph);
+	ctx.globalAlpha = 0.88;
+	fillOutlinedPath(ctx, '#1b272d', '#78909b', 1.6, () => {
+		ctx.moveTo(-bodyW * 0.7, -bodyL * 0.1);
+		ctx.quadraticCurveTo(-bodyW * 1.55 - wingBeat, bodyL * 0.04, -bodyW * 1.9 - wingBeat, bodyL * 0.42);
+		ctx.lineTo(-bodyW * 0.62, bodyL * 0.32);
+		ctx.closePath();
+	});
+	ctx.restore();
 
-	ctx.fillStyle = '#39413d';
-	ctx.strokeStyle = form.accent;
-	ctx.lineWidth = lerp(1, 2, morph);
-	ctx.beginPath();
-	ctx.ellipse(0, 0, bodyW, bodyH, 0, 0, Math.PI * 2);
-	ctx.fill();
-	ctx.stroke();
+	// Main body.
+	fillOutlinedPath(ctx, '#293940', '#93a9b5', lerp(1, 2, morph), () => {
+		ctx.moveTo(0, -bodyL * 0.56);
+		ctx.quadraticCurveTo(-bodyW, -bodyL * 0.26, -bodyW * 0.82, bodyL * 0.3);
+		ctx.quadraticCurveTo(0, bodyL * 0.58, bodyW * 0.82, bodyL * 0.3);
+		ctx.quadraticCurveTo(bodyW, -bodyL * 0.26, 0, -bodyL * 0.56);
+		ctx.closePath();
+	});
+	fillOutlinedPath(ctx, '#49606b66', '#0000', 0, () => {
+		ctx.ellipse(-bodyW * 0.22, -bodyL * 0.12, bodyW * 0.3, bodyL * 0.24, -0.25, 0, Math.PI * 2);
+	});
 
-	const ear = lerp(3, 13, morph);
-	ctx.beginPath();
-	ctx.moveTo(-bodyW * 0.62, headY + 9);
-	ctx.lineTo(-bodyW * 0.9, headY - ear);
-	ctx.lineTo(-bodyW * 0.2, headY);
-	ctx.lineTo(0, headY - ear * 1.2);
-	ctx.lineTo(bodyW * 0.25, headY);
-	ctx.lineTo(bodyW * 0.95, headY - ear);
-	ctx.lineTo(bodyW * 0.65, headY + 10);
-	ctx.closePath();
-	ctx.fillStyle = '#4b5550';
-	ctx.fill();
-	ctx.stroke();
+	// Near wing on top for depth.
+	fillOutlinedPath(ctx, '#223139', '#9ab5c8', 1.6, () => {
+		ctx.moveTo(bodyW * 0.56, -bodyL * 0.12);
+		ctx.quadraticCurveTo(bodyW * 1.5 + wingBeat, bodyL * 0.02, bodyW * 1.85 + wingBeat, bodyL * 0.38);
+		ctx.lineTo(bodyW * 0.52, bodyL * 0.3);
+		ctx.closePath();
+	});
 
+	// Head and beak.
+	fillOutlinedPath(ctx, '#354952', '#a9c0cb', 1.5, () => {
+		ctx.ellipse(0, -bodyL * 0.58, bodyW * 0.62, bodyW * 0.72, 0, 0, Math.PI * 2);
+	});
+	fillOutlinedPath(ctx, '#7b8f99', '#26343a', 1.2, () => {
+		ctx.moveTo(-5 * morph, -bodyL * 0.73);
+		ctx.lineTo(0, -bodyL * 1.02);
+		ctx.lineTo(5 * morph, -bodyL * 0.73);
+		ctx.closePath();
+	});
 	if (morph > 0.4) {
 		ctx.globalAlpha = (morph - 0.4) / 0.6;
-		drawCircle(ctx, -5 * morph, headY + 3, 2.3 * morph, '#edf1cf');
-		drawCircle(ctx, 5 * morph, headY + 3, 2.3 * morph, '#edf1cf');
+		drawCircle(ctx, -4, -bodyL * 0.62, 2, '#e7f7fb');
+		drawCircle(ctx, 4, -bodyL * 0.62, 2, '#e7f7fb');
 		ctx.globalAlpha = 1;
 	}
-
-	drawLine(ctx, -bodyW * 0.58, bodyH * 0.55, -bodyW * 0.86 - stride, bodyH * 0.55 + limbLength, '#7c8279', lerp(2.5, 5, morph));
-	drawLine(ctx, bodyW * 0.58, bodyH * 0.55, bodyW * 0.86 + stride, bodyH * 0.55 + limbLength, '#7c8279', lerp(2.5, 5, morph));
-	drawLine(ctx, -bodyW * 0.58, -2, -bodyW - 1 + stride, limbLength * 0.75, '#666f68', lerp(2.5, 5, morph));
-	drawLine(ctx, bodyW * 0.58, -2, bodyW + 1 - stride, limbLength * 0.75, '#666f68', lerp(2.5, 5, morph));
-	drawLine(ctx, 0, bodyH * 0.7, step * 8 * morph, bodyH + lerp(8, 21, morph), '#657169', lerp(2, 6, morph));
-	ctx.restore();
-}
-
-function drawFeline(ctx: CanvasRenderingContext2D, player: PlayerState, time: number, rawMorph: number): void {
-	const morph = ease(rawMorph);
-	const form = getTravelFormDefinition('feline');
-	const step = player.moving ? Math.sin(time * (player.sprinting ? 16 : 10.5)) : 0;
-	const bob = player.moving ? Math.abs(step) * 3.8 * morph : 0;
-	const bodyW = lerp(11, 23, morph);
-	const bodyH = lerp(18, 37, morph);
-	const headY = lerp(-12, -36, morph);
-	const stride = step * lerp(2, player.sprinting ? 11 : 7, morph);
-	const limbLength = lerp(6, 25, morph);
-
-	ctx.save();
-	ctx.translate(player.x, player.y - bob);
-	ctx.rotate(player.angle + Math.PI / 2 + step * 0.03 * morph);
-	drawSpectralTrail(ctx, time, form.accentSoft, 1.2, morph);
-	drawMorphAura(ctx, time, form.accent, morph);
-
-	ctx.fillStyle = '#44394a';
-	ctx.strokeStyle = form.accent;
-	ctx.lineWidth = lerp(1, 2, morph);
-	ctx.beginPath();
-	ctx.ellipse(0, 0, bodyW, bodyH, 0, 0, Math.PI * 2);
-	ctx.fill();
-	ctx.stroke();
-
-	const ear = lerp(3, 13, morph);
-	ctx.beginPath();
-	ctx.moveTo(-bodyW * 0.62, headY + 9);
-	ctx.lineTo(-bodyW * 0.55, headY - ear);
-	ctx.lineTo(-bodyW * 0.18, headY);
-	ctx.lineTo(0, headY - ear * 1.15);
-	ctx.lineTo(bodyW * 0.2, headY);
-	ctx.lineTo(bodyW * 0.58, headY - ear);
-	ctx.lineTo(bodyW * 0.65, headY + 9);
-	ctx.closePath();
-	ctx.fillStyle = '#58475f';
-	ctx.fill();
-	ctx.stroke();
-
-	if (morph > 0.4) {
-		ctx.globalAlpha = (morph - 0.4) / 0.6;
-		drawCircle(ctx, -5 * morph, headY + 3, 2.4 * morph, '#f0d8ff');
-		drawCircle(ctx, 5 * morph, headY + 3, 2.4 * morph, '#f0d8ff');
-		ctx.globalAlpha = 1;
-	}
-
-	const legScale = Math.max(0.16, morph);
-	const legs = [
-		[-bodyW * 0.68, bodyH * 0.4, -bodyW - stride, bodyH * 0.4 + limbLength],
-		[bodyW * 0.68, bodyH * 0.4, bodyW + stride, bodyH * 0.4 + limbLength],
-		[-bodyW * 0.78, 3, -bodyW * 1.25 + stride, limbLength * 0.82],
-		[bodyW * 0.78, 3, bodyW * 1.25 - stride, limbLength * 0.82],
-		[-bodyW * 0.58, -bodyH * 0.3, -bodyW * 1.08 - stride * 0.6, lerp(-3, 10, morph)],
-		[bodyW * 0.58, -bodyH * 0.3, bodyW * 1.08 + stride * 0.6, lerp(-3, 10, morph)],
-	] as const;
-	ctx.globalAlpha = lerp(0.2, 1, legScale);
-	for (const [x1, y1, x2, y2] of legs) {
-		drawLine(ctx, x1, y1, x2, y2, '#826d8d', lerp(2, 5, morph));
-	}
-	ctx.globalAlpha = 1;
-	drawLine(ctx, 0, bodyH * 0.72, step * 11 * morph, bodyH + lerp(8, 25, morph), '#846f91', lerp(2, 6, morph));
 	ctx.restore();
 }
 
