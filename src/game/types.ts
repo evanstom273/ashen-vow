@@ -263,6 +263,7 @@ export interface GameState {
 	noticeTime: number;
 	phase2: boolean;
 	utilityItem: UtilityItemId;
+	hitStop: number;
 }
 
 export interface StickInput {
