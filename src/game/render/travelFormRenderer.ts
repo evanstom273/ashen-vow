@@ -127,12 +127,13 @@ function drawWolf(ctx: CanvasRenderingContext2D, player: PlayerState, time: numb
 		ctx.ellipse(shoulderW * 0.3, bodyL * 0.16, hipW * 0.35, bodyL * 0.22, 0.22, 0, Math.PI * 2);
 	});
 
-	// Front legs over torso edge.
-	const frontY = -bodyL * 0.2;
-	drawLine(ctx, -shoulderW * 0.72, frontY, -shoulderW * 1.02 + stride, frontY + lerp(10, 26, morph), '#59655e', lerp(3, 7, morph));
-	drawLine(ctx, shoulderW * 0.72, frontY, shoulderW * 1.02 - stride, frontY + lerp(10, 26, morph), '#59655e', lerp(3, 7, morph));
-	drawPaw(ctx, -shoulderW * 1.02 + stride, frontY + lerp(11, 28, morph), -0.08, '#737d75', '#2a332f', morph);
-	drawPaw(ctx, shoulderW * 1.02 - stride, frontY + lerp(11, 28, morph), 0.08, '#737d75', '#2a332f', morph);
+	// Front legs reach toward the head; rear legs remain the pushing pair behind.
+	const frontY = -bodyL * 0.18;
+	const frontReach = lerp(9, 23, morph);
+	drawLine(ctx, -shoulderW * 0.7, frontY, -shoulderW * 1.06 + stride * 0.58, frontY - frontReach, '#59655e', lerp(3, 7, morph));
+	drawLine(ctx, shoulderW * 0.7, frontY, shoulderW * 1.06 - stride * 0.58, frontY - frontReach, '#59655e', lerp(3, 7, morph));
+	drawPaw(ctx, -shoulderW * 1.06 + stride * 0.58, frontY - frontReach, -0.2, '#737d75', '#2a332f', morph);
+	drawPaw(ctx, shoulderW * 1.06 - stride * 0.58, frontY - frontReach, 0.2, '#737d75', '#2a332f', morph);
 
 	// Neck/head/snout.
 	fillOutlinedPath(ctx, '#53605a', '#aeb5ac', lerp(1, 2, morph), () => {
@@ -183,8 +184,8 @@ function drawFeline(ctx: CanvasRenderingContext2D, player: PlayerState, time: nu
 	const bob = player.moving ? Math.abs(step) * 2.9 * morph : 0;
 	const stride = step * lerp(1.5, player.sprinting ? 11 : 7.5, morph);
 	const bodyL = lerp(25, 58, morph);
-	const chestW = lerp(12, 24, morph);
-	const waistW = lerp(9, 16, morph);
+	const chestW = lerp(12, 25, morph);
+	const waistW = lerp(8, 14, morph);
 
 	ctx.save();
 	ctx.translate(player.x, player.y - bob);
@@ -211,10 +212,11 @@ function drawFeline(ctx: CanvasRenderingContext2D, player: PlayerState, time: nu
 	ctx.stroke();
 	ctx.restore();
 
-	// Middle pair, partly tucked behind torso to sell six limbs.
-	const midY = bodyL * 0.02;
-	drawLine(ctx, -chestW * 0.78, midY, -chestW * 1.35 + stride * 0.65, midY + lerp(8, 22, morph), '#5f4d67', lerp(3, 6.5, morph));
-	drawLine(ctx, chestW * 0.78, midY, chestW * 1.35 - stride * 0.65, midY + lerp(8, 22, morph), '#5f4d67', lerp(3, 6.5, morph));
+	// Middle pair sits between shoulder and waist, angled slightly forward/outward.
+	const midY = -bodyL * 0.02;
+	const midReach = lerp(6, 17, morph);
+	drawLine(ctx, -chestW * 0.74, midY, -chestW * 1.24 + stride * 0.42, midY - midReach, '#5f4d67', lerp(3, 6.5, morph));
+	drawLine(ctx, chestW * 0.74, midY, chestW * 1.24 - stride * 0.42, midY - midReach, '#5f4d67', lerp(3, 6.5, morph));
 
 	// Sleek torso with narrow waist.
 	fillOutlinedPath(ctx, '#58465f', '#b89bc7', lerp(1, 2, morph), () => {
@@ -232,16 +234,17 @@ function drawFeline(ctx: CanvasRenderingContext2D, player: PlayerState, time: nu
 		ctx.ellipse(chestW * 0.28, bodyL * 0.13, waistW * 0.36, bodyL * 0.24, 0.2, 0, Math.PI * 2);
 	});
 
-	// Front pair in foreground.
-	const frontY = -bodyL * 0.22;
-	drawLine(ctx, -chestW * 0.72, frontY, -chestW * 1.15 + stride, frontY + lerp(11, 27, morph), '#785f82', lerp(3, 7, morph));
-	drawLine(ctx, chestW * 0.72, frontY, chestW * 1.15 - stride, frontY + lerp(11, 27, morph), '#785f82', lerp(3, 7, morph));
-	drawPaw(ctx, -chestW * 1.15 + stride, frontY + lerp(12, 29, morph), -0.1, '#987ca5', '#3d3045', morph);
-	drawPaw(ctx, chestW * 1.15 - stride, frontY + lerp(12, 29, morph), 0.1, '#987ca5', '#3d3045', morph);
+	// Front pair reaches clearly toward the head, giving the cat a forward-driving silhouette.
+	const frontY = -bodyL * 0.2;
+	const frontReach = lerp(10, 24, morph);
+	drawLine(ctx, -chestW * 0.68, frontY, -chestW * 1.1 + stride * 0.66, frontY - frontReach, '#785f82', lerp(3, 7, morph));
+	drawLine(ctx, chestW * 0.68, frontY, chestW * 1.1 - stride * 0.66, frontY - frontReach, '#785f82', lerp(3, 7, morph));
+	drawPaw(ctx, -chestW * 1.1 + stride * 0.66, frontY - frontReach, -0.22, '#987ca5', '#3d3045', morph);
+	drawPaw(ctx, chestW * 1.1 - stride * 0.66, frontY - frontReach, 0.22, '#987ca5', '#3d3045', morph);
 
-	// Finish middle paws in front edge but below head.
-	drawPaw(ctx, -chestW * 1.35 + stride * 0.65, midY + lerp(9, 24, morph), -0.12, '#826d8d', '#382c40', morph * 0.95);
-	drawPaw(ctx, chestW * 1.35 - stride * 0.65, midY + lerp(9, 24, morph), 0.12, '#826d8d', '#382c40', morph * 0.95);
+	// Middle paws stay a little behind the front pair but still point forward.
+	drawPaw(ctx, -chestW * 1.24 + stride * 0.42, midY - midReach, -0.16, '#826d8d', '#382c40', morph * 0.95);
+	drawPaw(ctx, chestW * 1.24 - stride * 0.42, midY - midReach, 0.16, '#826d8d', '#382c40', morph * 0.95);
 
 	// Feline head with cheek flare and ears.
 	fillOutlinedPath(ctx, '#695370', '#c5a9d1', lerp(1, 2, morph), () => {
