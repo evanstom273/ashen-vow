@@ -31,7 +31,8 @@ export class OverlayController {
 		this.eyebrowEl.textContent = 'TWO VOWS. TWO ENDS.';
 		this.titleEl.innerHTML = 'ASHEN <span>VOW</span>';
 		this.descriptionEl.innerHTML = 'Choose a duel.<br>Every shape, arena and foe is drawn in code.';
-		this.beginEl.innerHTML = 'THE HOLLOW KING <span>→</span>';
+		this.beginEl.innerHTML = '<small>THE SUNKEN SANCTUM</small><strong>AERON, THE HOLLOW KING</strong><span>→</span>';
+		this.secondFightEl.innerHTML = '<small>THE SHATTERED ORRERY</small><strong>VAEL, THE STARVED SEER</strong><span>→</span>';
 		this.tipEl.textContent = 'Two bosses. Two arenas. One procedural visual language.';
 		this.setMenuChoicesVisible(true);
 		this.setPlaying(false);
