@@ -1,6 +1,7 @@
 import { PLAYER_START } from '../content/playerDefaults.ts';
 import { getAreaForFight } from '../content/areas.ts';
 import { getFightDefinition } from '../content/fights.ts';
+import { getEnemyDefinition } from '../content/enemies.ts';
 import { initializeSpellLoadout, replenishSpellsAtRest } from './spellState.ts';
 import { createInitialWorldState } from './worldState.ts';
 import type { BossState, FightId, GameState, InputState, PlayerState } from '../types.ts';
@@ -26,12 +27,13 @@ export function createPlayerState(): PlayerState {
 
 export function createBossState(fightId: FightId): BossState {
 	const fight = getFightDefinition(fightId);
+	const enemy = getEnemyDefinition(fight.enemyId);
 	return {
 		x: fight.spawn.x,
 		y: fight.spawn.y,
-		hp: fight.maxHp,
-		baseMax: fight.maxHp,
-		max: fight.maxHp,
+		hp: enemy.maxHp,
+		baseMax: enemy.maxHp,
+		max: enemy.maxHp,
 		angle: Math.PI / 2,
 		state: 'idle',
 		timer: fight.idleTimer,
