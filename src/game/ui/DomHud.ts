@@ -44,7 +44,7 @@ export class DomHud {
 	private readonly slotContextTitleEl = $('slotContextTitle');
 	private readonly slotContextMetaEl = $('slotContextMeta');
 
-	setContextAction(mode: 'roll' | 'grace' | 'gate' | 'blocked'): void {
+	setContextAction(mode: 'roll' | 'grace' | 'gate' | 'blocked' | 'exit'): void {
 		this.slotContextEl.classList.toggle('is-context', mode !== 'roll');
 		if (mode === 'grace') {
 			this.slotContextTagEl.textContent = 'Grace';
@@ -56,6 +56,11 @@ export class DomHud {
 			this.slotContextTitleEl.textContent = 'Fort';
 			this.slotContextMetaEl.textContent = 'tap';
 			this.slotContextEl.setAttribute('aria-label', 'Enter Aeron\'s fort');
+		} else if (mode === 'exit') {
+			this.slotContextTagEl.textContent = 'Return';
+			this.slotContextTitleEl.textContent = 'Leave';
+			this.slotContextMetaEl.textContent = 'tap';
+			this.slotContextEl.setAttribute('aria-label', 'Leave the arena');
 		} else if (mode === 'blocked') {
 			this.slotContextTagEl.textContent = 'Fort';
 			this.slotContextTitleEl.textContent = 'Silent';
