@@ -2,6 +2,7 @@ import { MAX_DELTA_TIME } from './constants.ts';
 import { AudioManager } from './audio/AudioManager.ts';
 import { getAreaForFight, getAreaSpawn } from './content/areas.ts';
 import { getFightDefinition } from './content/fights.ts';
+import { PLAYER_TUNING } from './content/playerDefaults.ts';
 import { decayShake, spawnBurst, updateParticles } from './effects/particles.ts';
 import { GameEventBus } from './events/GameEventBus.ts';
 import { SceneController } from './flow/SceneController.ts';
@@ -107,6 +108,7 @@ export class Game {
 
 	private enterWorld(spawnId: string): void {
 		this.sprinting = false;
+		this.state.player.sprinting = false;
 		if (this.state.player.hp <= 0) reviveAtCheckpoint(this.state);
 		this.state.currentAreaId = 'ashen-wilds';
 		this.positionPlayer('ashen-wilds', spawnId);
@@ -145,6 +147,8 @@ export class Game {
 
 	private returnToMenu(): void {
 		this.sprinting = false;
+		this.state.player.sprinting = false;
+		this.state.player.moving = false;
 		this.state.charging = false;
 		this.state.charge = 0;
 		this.state.encounterOriginAreaId = null;
@@ -186,6 +190,8 @@ export class Game {
 
 		const inWorld = this.state.scene.kind === 'world';
 		this.sprinting = false;
+		this.state.player.sprinting = false;
+		this.state.player.moving = false;
 		this.scenes.transition('pause', this.state.currentAreaId);
 		this.input.clearKeys();
 		this.state.charging = false;
@@ -196,6 +202,8 @@ export class Game {
 
 	private end(win: boolean): void {
 		this.sprinting = false;
+		this.state.player.sprinting = false;
+		this.state.player.moving = false;
 		this.state.charging = false;
 		const returnToWorld = this.state.encounterOriginAreaId === 'ashen-wilds';
 		if (win) {
@@ -275,11 +283,15 @@ export class Game {
 	private onAction(action: PlayerAction): void {
 		if (action === 'sprintStart') {
 			if (this.state.scene.kind === 'world' && (isNearGrace(this.state.player) || isNearAeronGate(this.state.player))) return;
-			if (this.state.scene.kind === 'world' || this.state.scene.kind === 'combat') this.sprinting = true;
+			if (this.state.scene.kind === 'world' || this.state.scene.kind === 'combat') {
+				this.sprinting = true;
+				this.state.player.sprinting = true;
+			}
 			return;
 		}
 		if (action === 'sprintEnd') {
 			this.sprinting = false;
+			this.state.player.sprinting = false;
 			return;
 		}
 		if (action === 'interact') {
@@ -317,9 +329,14 @@ export class Game {
 		if (sprinting) {
 			this.state.player.sp = Math.max(0, this.state.player.sp - 12 * dt);
 			this.state.player.regen = Math.max(this.state.player.regen, 0.28);
-			if (this.state.player.sp <= 0) this.sprinting = false;
+			if (this.state.player.sp <= 0) {
+				this.sprinting = false;
+				this.state.player.sprinting = false;
+			}
 		}
-		updatePlayerMovement(this.state, movement, dt, 0.45 * (sprinting ? 1.65 : 1));
+		this.state.player.sprinting = sprinting;
+		const sprintScale = PLAYER_TUNING.movement.sprintSpeed / PLAYER_TUNING.movement.normalSpeed;
+		updatePlayerMovement(this.state, movement, dt, sprinting ? sprintScale : 1);
 		constrainToArea(this.state.player, 'ashen-wilds');
 		resolveOverworldCollisions(this.state.player);
 
@@ -340,9 +357,14 @@ export class Game {
 		if (sprinting) {
 			this.state.player.sp = Math.max(0, this.state.player.sp - 14 * dt);
 			this.state.player.regen = Math.max(this.state.player.regen, 0.3);
-			if (this.state.player.sp <= 0) this.sprinting = false;
+			if (this.state.player.sp <= 0) {
+				this.sprinting = false;
+				this.state.player.sprinting = false;
+			}
 		}
-		updatePlayerMovement(this.state, movement, dt, sprinting ? 1.42 : 1);
+		this.state.player.sprinting = sprinting;
+		const sprintScale = PLAYER_TUNING.movement.sprintSpeed / PLAYER_TUNING.movement.normalSpeed;
+		updatePlayerMovement(this.state, movement, dt, sprinting ? sprintScale : 1);
 		constrainToArea(this.state.player, this.state.currentAreaId);
 
 		updateBoss(

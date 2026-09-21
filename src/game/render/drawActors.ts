@@ -6,17 +6,28 @@ import { drawCircle, drawLine } from './primitives.ts';
 
 function drawPlayer(ctx: CanvasRenderingContext2D, player: PlayerState, time: number): void {
 	const radius = 13;
+	const gaitSpeed = player.sprinting ? 13.5 : 9;
+	const step = player.moving && player.roll <= 0 ? Math.sin(time * gaitSpeed) : 0;
+	const bob = player.moving && player.roll <= 0 ? Math.abs(step) * (player.sprinting ? 3.2 : 2.2) : 0;
+	const sway = step * (player.sprinting ? 0.055 : 0.038);
+	const stride = step * (player.sprinting ? 3.2 : 2.1);
+
 	ctx.save();
 	ctx.translate(player.x, player.y);
-	drawCircle(ctx, 2, 12, radius * 1.1, '#0007');
-	ctx.rotate(player.angle + Math.PI / 2);
+	const shadowSquash = 1 - Math.min(0.18, bob * 0.035);
+	ctx.save();
+	ctx.scale(1 + (1 - shadowSquash) * 0.7, shadowSquash);
+	drawCircle(ctx, 2, 12 / shadowSquash, radius * 1.1, '#0007');
+	ctx.restore();
+	ctx.translate(0, -bob);
+	ctx.rotate(player.angle + Math.PI / 2 + sway);
 	if (player.inv > 0 && player.roll <= 0) ctx.globalAlpha = 0.5 + Math.sin(time * 50) * 0.25;
 
 	ctx.fillStyle = '#4d6865';
 	ctx.beginPath();
 	ctx.moveTo(-radius * 0.8, 0);
-	ctx.lineTo(-radius * 1.1, radius * 1.65);
-	ctx.quadraticCurveTo(0, radius * 1.2, radius * 1.1, radius * 1.65);
+	ctx.lineTo(-radius * 1.1 - stride, radius * 1.65);
+	ctx.quadraticCurveTo(stride * 0.3, radius * 1.2, radius * 1.1 + stride, radius * 1.65);
 	ctx.lineTo(radius * 0.8, 0);
 	ctx.fill();
 
@@ -45,18 +56,27 @@ function drawPlayer(ctx: CanvasRenderingContext2D, player: PlayerState, time: nu
 	ctx.restore();
 }
 
-function drawHollowKing(ctx: CanvasRenderingContext2D, boss: BossState, _time: number, phase2: boolean): void {
+function drawHollowKing(ctx: CanvasRenderingContext2D, boss: BossState, time: number, phase2: boolean): void {
 	const radius = 25;
+	const step = boss.moving ? Math.sin(time * (phase2 ? 8.2 : 6.6)) : 0;
+	const bob = boss.moving ? Math.abs(step) * (phase2 ? 3.2 : 2.5) : 0;
+	const sway = step * 0.028;
+	const stride = step * 3.2;
+
 	ctx.save();
 	ctx.translate(boss.x, boss.y);
+	ctx.save();
+	ctx.scale(1 + bob * 0.012, 1 - bob * 0.009);
 	drawCircle(ctx, 2, 12, radius * 1.1, '#0007');
-	ctx.rotate(boss.angle + Math.PI / 2);
+	ctx.restore();
+	ctx.translate(0, -bob);
+	ctx.rotate(boss.angle + Math.PI / 2 + sway);
 
 	ctx.fillStyle = phase2 ? '#743b2c' : '#514b3d';
 	ctx.beginPath();
 	ctx.moveTo(-radius * 0.8, 0);
-	ctx.lineTo(-radius * 1.1, radius * 1.65);
-	ctx.quadraticCurveTo(0, radius * 1.2, radius * 1.1, radius * 1.65);
+	ctx.lineTo(-radius * 1.1 - stride, radius * 1.65);
+	ctx.quadraticCurveTo(stride * 0.25, radius * 1.2, radius * 1.1 + stride, radius * 1.65);
 	ctx.lineTo(radius * 0.8, 0);
 	ctx.fill();
 
@@ -95,10 +115,19 @@ function drawHollowKing(ctx: CanvasRenderingContext2D, boss: BossState, _time: n
 
 function drawStarSeer(ctx: CanvasRenderingContext2D, boss: BossState, time: number, phase2: boolean): void {
 	const r = 27;
+	const step = boss.moving ? Math.sin(time * (phase2 ? 8.8 : 7.1)) : 0;
+	const bob = boss.moving ? Math.abs(step) * (phase2 ? 3.5 : 2.7) : 0;
+	const sway = step * 0.024;
+	const robeDrift = step * 4;
+
 	ctx.save();
 	ctx.translate(boss.x, boss.y);
+	ctx.save();
+	ctx.scale(1 + bob * 0.01, 1 - bob * 0.008);
 	drawCircle(ctx, 3, 14, 31, '#0008');
-	ctx.rotate(boss.angle + Math.PI / 2);
+	ctx.restore();
+	ctx.translate(0, -bob);
+	ctx.rotate(boss.angle + Math.PI / 2 + sway);
 
 	if (phase2) {
 		ctx.globalAlpha = 0.14 + Math.sin(time * 5) * 0.04;
@@ -109,9 +138,9 @@ function drawStarSeer(ctx: CanvasRenderingContext2D, boss: BossState, time: numb
 	ctx.fillStyle = phase2 ? '#34505a' : '#263a42';
 	ctx.beginPath();
 	ctx.moveTo(-12, -5);
-	ctx.lineTo(-25, 38);
-	ctx.lineTo(0, 52);
-	ctx.lineTo(25, 38);
+	ctx.lineTo(-25 - robeDrift, 38);
+	ctx.lineTo(robeDrift * 0.25, 52);
+	ctx.lineTo(25 + robeDrift, 38);
 	ctx.lineTo(12, -5);
 	ctx.closePath();
 	ctx.fill();

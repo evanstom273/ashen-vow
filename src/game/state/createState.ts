@@ -14,6 +14,8 @@ export function createPlayerState(): PlayerState {
 		heal: 0,
 		swing: 0,
 		regen: 0,
+		moving: false,
+		sprinting: false,
 	};
 }
 
@@ -34,6 +36,7 @@ export function createBossState(fightId: FightId): BossState {
 		tx: 0,
 		ty: 0,
 		effects: [],
+		moving: false,
 	};
 }
 

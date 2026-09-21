@@ -126,6 +126,8 @@ export interface PlayerState {
 	regen: number;
 	dx: number;
 	dy: number;
+	moving: boolean;
+	sprinting: boolean;
 }
 
 export interface ActiveEffect {
@@ -153,6 +155,7 @@ export interface BossState {
 	tx: number;
 	ty: number;
 	effects: ActiveEffect[];
+	moving: boolean;
 }
 
 export interface Shot {
