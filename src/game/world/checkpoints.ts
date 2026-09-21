@@ -3,6 +3,10 @@ import { replenishSpellsAtRest } from '../state/spellState.ts';
 import { respawnAllBosses } from '../state/worldState.ts';
 import type { GameState } from '../types.ts';
 
+export function reviveAtCheckpoint(state: GameState): void {
+	reviveAtCheckpoint(state);
+}
+
 export function restAtCheckpoint(state: GameState, checkpointId: string): void {
 	state.world.activeCheckpointId = checkpointId;
 	state.player.hp = PLAYER_MAX_HP;
