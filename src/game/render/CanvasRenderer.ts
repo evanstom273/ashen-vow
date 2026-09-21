@@ -56,7 +56,7 @@ export class CanvasRenderer {
 		const shakeOffset = state.shake;
 
 		ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-		ctx.fillStyle = '#0a100f';
+		ctx.fillStyle = state.fightId === 'vael' ? '#070d12' : '#0a100f';
 		ctx.fillRect(0, 0, w, h);
 
 		ctx.save();
@@ -66,16 +66,16 @@ export class CanvasRenderer {
 		);
 		ctx.scale(scale, scale);
 
-		drawArena(ctx, state.time);
-		drawBossTelegraph(ctx, state.boss, mode, state.time);
-		drawHazards(ctx, state.hazards);
+		drawArena(ctx, state.time, state.fightId);
+		drawBossTelegraph(ctx, state.boss, mode, state.time, state.fightId);
+		drawHazards(ctx, state.hazards, state.fightId);
 
 		if (state.player.y < state.boss.y) {
-			drawKnight(ctx, state.player, false, state.time, state.phase2);
-			drawKnight(ctx, state.boss, true, state.time, state.phase2);
+			drawKnight(ctx, state.player, false, state.time, state.phase2, state.fightId);
+			drawKnight(ctx, state.boss, true, state.time, state.phase2, state.fightId);
 		} else {
-			drawKnight(ctx, state.boss, true, state.time, state.phase2);
-			drawKnight(ctx, state.player, false, state.time, state.phase2);
+			drawKnight(ctx, state.boss, true, state.time, state.phase2, state.fightId);
+			drawKnight(ctx, state.player, false, state.time, state.phase2, state.fightId);
 		}
 
 		if (state.charging) {
@@ -85,7 +85,7 @@ export class CanvasRenderer {
 
 		drawProjectiles(ctx, state.shots, state.time);
 		drawParticles(ctx, state.particles);
-		drawAtmosphericDust(ctx, state.time);
+		drawAtmosphericDust(ctx, state.time, state.fightId);
 
 		ctx.restore();
 
