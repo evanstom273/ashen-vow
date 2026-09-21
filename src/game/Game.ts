@@ -1,5 +1,6 @@
 import { MAX_DELTA_TIME } from './constants.ts';
 import { AudioManager } from './audio/AudioManager.ts';
+import { getFightDefinition } from './content/fights.ts';
 import { decayShake, updateParticles } from './effects/particles.ts';
 import { InputSystem } from './input/InputSystem.ts';
 import { CanvasRenderer } from './render/CanvasRenderer.ts';
@@ -20,7 +21,7 @@ import { createInitialGameState, createInitialInputState, resetCombatState } fro
 import { updateSpellCooldowns } from './state/spellState.ts';
 import { DomHud } from './ui/DomHud.ts';
 import { OverlayController } from './ui/OverlayController.ts';
-import type { GameState, InputState, PlayerAction } from './types.ts';
+import type { FightId, GameState, InputState, PlayerAction } from './types.ts';
 
 export class Game {
 	private readonly state: GameState = createInitialGameState();
@@ -45,9 +46,17 @@ export class Game {
 		this.input.bindTouch();
 
 		const beginButton = document.getElementById('begin');
+		const secondFightButton = document.getElementById('secondFight');
+		const menuButton = document.getElementById('menu');
 		const pauseButton = document.getElementById('pause');
-		beginButton?.addEventListener('click', () => this.start());
+		beginButton?.addEventListener('click', () => {
+			if (this.state.mode === 'title') this.startFight('aeron');
+			else this.start();
+		});
+		secondFightButton?.addEventListener('click', () => this.startFight('vael'));
+		menuButton?.addEventListener('click', () => this.returnToMenu());
 		pauseButton?.addEventListener('click', () => this.togglePause());
+		this.overlay.showMainMenu();
 
 		addEventListener('blur', () => {
 			if (this.state.mode === 'play') {
@@ -71,6 +80,19 @@ export class Game {
 		this.hud.announceWithTimer(this.state, message, duration);
 	}
 
+	private startFight(fightId: FightId): void {
+		this.state.fightId = fightId;
+		this.start();
+	}
+
+	private returnToMenu(): void {
+		this.state.mode = 'title';
+		this.state.charging = false;
+		this.state.charge = 0;
+		this.input.clearKeys();
+		this.overlay.showMainMenu();
+	}
+
 	start(): void {
 		if (this.state.mode === 'pause') {
 			this.state.mode = 'play';
@@ -84,7 +106,7 @@ export class Game {
 		this.state.attempts += 1;
 		this.state.mode = 'play';
 		this.overlay.setPlaying(true);
-		this.announce('THE LAST WATCH', 2.5);
+		this.announce(getFightDefinition(this.state.fightId).introAnnouncement, 2.5);
 	}
 
 	private togglePause(): void {
@@ -110,10 +132,10 @@ export class Game {
 			if (this.state.mode !== 'dead' && this.state.mode !== 'win') return;
 
 			if (win) {
-				this.overlay.showVictoryScreen(this.state.attempts);
+				this.overlay.showVictoryScreen(this.state.attempts, this.state.fightId);
 			} else {
 				const percentTaken = Math.round((1 - this.state.boss.hp / this.state.boss.baseMax) * 100);
-				this.overlay.showDeathScreen(this.state.attempts, percentTaken);
+				this.overlay.showDeathScreen(this.state.attempts, percentTaken, this.state.fightId);
 			}
 		}, 1000);
 	}
