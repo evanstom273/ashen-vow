@@ -28,6 +28,7 @@ export class SceneController {
 
 	transition(to: SceneKind, areaId: AreaId | null = this.state.scene.areaId): void {
 		const from = this.state.scene.kind;
+		const previousAreaId = this.state.scene.areaId;
 		if (from !== to && !canTransitionScene(from, to)) {
 			throw new Error(`Invalid scene transition: ${from} -> ${to}`);
 		}
@@ -39,9 +40,9 @@ export class SceneController {
 		};
 		this.state.mode = modeForScene(to);
 		this.events.emit({ type: 'sceneChanged', from, to, areaId });
-		if (areaId && areaId !== this.state.currentAreaId) {
+		if (areaId) {
 			this.state.currentAreaId = areaId;
-			this.events.emit({ type: 'areaEntered', areaId });
+			if (areaId !== previousAreaId) this.events.emit({ type: 'areaEntered', areaId });
 		}
 	}
 
