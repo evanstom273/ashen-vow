@@ -4,11 +4,6 @@ import { respawnAllBosses } from '../state/worldState.ts';
 import type { GameState } from '../types.ts';
 
 export function reviveAtCheckpoint(state: GameState): void {
-	reviveAtCheckpoint(state);
-}
-
-export function restAtCheckpoint(state: GameState, checkpointId: string): void {
-	state.world.activeCheckpointId = checkpointId;
 	state.player.hp = PLAYER_MAX_HP;
 	state.player.sp = PLAYER_MAX_SP;
 	state.player.flasks = 3;
@@ -19,5 +14,10 @@ export function restAtCheckpoint(state: GameState, checkpointId: string): void {
 	state.charging = false;
 	state.charge = 0;
 	replenishSpellsAtRest(state);
+}
+
+export function restAtCheckpoint(state: GameState, checkpointId: string): void {
+	state.world.activeCheckpointId = checkpointId;
+	reviveAtCheckpoint(state);
 	respawnAllBosses(state.world);
 }
