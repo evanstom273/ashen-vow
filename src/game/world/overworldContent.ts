@@ -187,6 +187,10 @@ export function isNearGrace(player: PlayerState): boolean {
 	return Math.hypot(player.x - GRACE_POSITION.x, player.y - GRACE_POSITION.y) <= GRACE_INTERACT_RADIUS;
 }
 
+export function isNearAeronGate(player: PlayerState): boolean {
+	return Math.hypot(player.x - AERON_GATE_POSITION.x, player.y - AERON_GATE_POSITION.y) <= 125;
+}
+
 export function isInsideAeronGate(player: PlayerState): boolean {
 	return player.x >= 2790 && player.x <= 2880 && player.y >= 1350 && player.y <= 1450;
 }

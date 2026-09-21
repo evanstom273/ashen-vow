@@ -119,15 +119,15 @@ export function updateSorceryCharge(state: GameState, dt: number): void {
 	spawnSpellChargeParticles(state, state.player.x, state.player.y, spell.visual);
 }
 
-export function updatePlayerMovement(state: GameState, movement: StickInput, dt: number): void {
+export function updatePlayerMovement(state: GameState, movement: StickInput, dt: number, speedScale = 1): void {
 	const { player } = state;
 	const length = Math.hypot(movement.x, movement.y);
 	const spell = getEquippedSpellDefinition(state);
 
 	if (player.roll > 0) {
 		player.roll -= dt;
-		player.x += player.dx * PLAYER_TUNING.dodge.speed * dt;
-		player.y += player.dy * PLAYER_TUNING.dodge.speed * dt;
+		player.x += player.dx * PLAYER_TUNING.dodge.speed * speedScale * dt;
+		player.y += player.dy * PLAYER_TUNING.dodge.speed * speedScale * dt;
 		spawnBurst(state, player.x, player.y, '#8a9d92', 1, 20);
 	} else if (length) {
 		const speed = player.heal > 0
@@ -135,8 +135,8 @@ export function updatePlayerMovement(state: GameState, movement: StickInput, dt:
 			: state.charging
 				? spell.charge.chargingMoveSpeed
 				: PLAYER_TUNING.movement.normalSpeed;
-		player.x += (movement.x / Math.max(1, length)) * speed * dt;
-		player.y += (movement.y / Math.max(1, length)) * speed * dt;
+		player.x += (movement.x / Math.max(1, length)) * speed * speedScale * dt;
+		player.y += (movement.y / Math.max(1, length)) * speed * speedScale * dt;
 		player.angle = Math.atan2(movement.y, movement.x);
 	}
 }
