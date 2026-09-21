@@ -114,6 +114,17 @@ export class OverlayController {
 		this.setGameplayScene(null);
 	}
 
+	showWorldDeathScreen(): void {
+		this.eyebrowEl.textContent = 'THE WILDS CLAIM ANOTHER';
+		this.titleEl.textContent = 'YOU DIED';
+		this.descriptionEl.textContent = 'Return to Grace and walk the road again.';
+		this.beginEl.textContent = 'RETURN TO GRACE';
+		this.tipEl.textContent = 'Ordinary enemies return when Grace restores the world.';
+		this.secondFightEl.hidden = true;
+		this.menuEl.hidden = false;
+		this.setGameplayScene(null);
+	}
+
 	showDeathScreen(attempts: number, bossHpPercentTaken: number, fightId: FightId, returnToWorld = false): void {
 		const fight = getFightDefinition(fightId);
 		this.eyebrowEl.textContent = fight.copy.deathEyebrow;
