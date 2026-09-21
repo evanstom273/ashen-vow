@@ -3,8 +3,13 @@ import type { SpellVisualProfile } from '../content/spellVisuals.ts';
 import type { BossState, FightId, PlayerState, Shot } from '../types.ts';
 import { drawSpellChargeRing, drawSpellProjectile } from './spellVisualRenderer.ts';
 import { drawCircle, drawLine } from './primitives.ts';
+import { drawTravelForm } from './travelFormRenderer.ts';
 
-function drawPlayer(ctx: CanvasRenderingContext2D, player: PlayerState, time: number): void {
+function drawPlayer(ctx: CanvasRenderingContext2D, player: PlayerState, time: number, charging: boolean): void {
+	if (player.transformed || player.transformProgress >= 0.5) {
+		drawTravelForm(ctx, player, time);
+		return;
+	}
 	const radius = 13;
 	const gaitSpeed = player.sprinting ? 13.5 : 9;
 	const step = player.moving && player.roll <= 0 ? Math.sin(time * gaitSpeed) : 0;
@@ -14,13 +19,16 @@ function drawPlayer(ctx: CanvasRenderingContext2D, player: PlayerState, time: nu
 
 	ctx.save();
 	ctx.translate(player.x, player.y);
+	if (player.hitReact > 0) ctx.translate(Math.sin(time * 80) * 4, 1.5);
 	const shadowSquash = 1 - Math.min(0.18, bob * 0.035);
 	ctx.save();
 	ctx.scale(1 + (1 - shadowSquash) * 0.7, shadowSquash);
 	drawCircle(ctx, 2, 12 / shadowSquash, radius * 1.1, '#0007');
 	ctx.restore();
 	ctx.translate(0, -bob);
-	ctx.rotate(player.angle + Math.PI / 2 + sway);
+	const dodgeTwist = player.roll > 0 ? Math.sin((0.34 - player.roll) / 0.34 * Math.PI) * 0.78 : 0;
+	const castLean = charging ? -0.12 : player.swing > 0 ? 0.18 : 0;
+	ctx.rotate(player.angle + Math.PI / 2 + sway + dodgeTwist + castLean);
 	if (player.inv > 0 && player.roll <= 0) ctx.globalAlpha = 0.5 + Math.sin(time * 50) * 0.25;
 
 	ctx.fillStyle = '#4d6865';
@@ -49,7 +57,8 @@ function drawPlayer(ctx: CanvasRenderingContext2D, player: PlayerState, time: nu
 
 	ctx.save();
 	ctx.translate(radius * 0.9, 0);
-	ctx.rotate(0.2);
+	const playerWeaponAngle = charging ? -0.85 : player.swing > 0 ? 1.05 : player.heal > 0 ? 0.55 : 0.2;
+	ctx.rotate(playerWeaponAngle);
 	drawLine(ctx, 0, 10, 0, -34, '#d7e0ca', 3);
 	drawLine(ctx, -8, 0, 8, 0, '#ac9461', 3);
 	ctx.restore();
@@ -65,6 +74,7 @@ function drawHollowKing(ctx: CanvasRenderingContext2D, boss: BossState, time: nu
 
 	ctx.save();
 	ctx.translate(boss.x, boss.y);
+	if (boss.hitReact > 0) ctx.translate(Math.sin(time * 70) * 5, 0);
 	ctx.save();
 	ctx.scale(1 + bob * 0.012, 1 - bob * 0.009);
 	drawCircle(ctx, 2, 12, radius * 1.1, '#0007');
@@ -105,7 +115,11 @@ function drawHollowKing(ctx: CanvasRenderingContext2D, boss: BossState, time: nu
 
 	ctx.save();
 	ctx.translate(radius * 0.9, 0);
-	const weaponAngle = boss.state === 'windup' ? -0.9 : boss.state === 'attack' ? 1.4 : 0.2;
+	const weaponAngle = boss.state === 'windup'
+		? boss.move === 0 ? -1.2 : boss.move === 1 ? -0.45 : -1.55
+		: boss.state === 'attack'
+			? boss.move === 0 ? 1.65 : boss.move === 1 ? 0.65 : 1.9
+			: boss.state === 'recover' ? 0.55 : 0.2;
 	ctx.rotate(weaponAngle);
 	drawLine(ctx, 0, 10, 0, -64, '#c2b99b', 7);
 	drawLine(ctx, -8, 0, 8, 0, '#ac9461', 3);
@@ -122,6 +136,7 @@ function drawStarSeer(ctx: CanvasRenderingContext2D, boss: BossState, time: numb
 
 	ctx.save();
 	ctx.translate(boss.x, boss.y);
+	if (boss.hitReact > 0) ctx.translate(Math.sin(time * 76) * 4, 0);
 	ctx.save();
 	ctx.scale(1 + bob * 0.01, 1 - bob * 0.008);
 	drawCircle(ctx, 3, 14, 31, '#0008');
@@ -182,7 +197,11 @@ function drawStarSeer(ctx: CanvasRenderingContext2D, boss: BossState, time: numb
 
 	ctx.save();
 	ctx.translate(r * 0.95, -2);
-	const weaponAngle = boss.state === 'windup' ? -1.25 : boss.state === 'attack' ? 1.15 : -0.05;
+	const weaponAngle = boss.state === 'windup'
+		? boss.move === 0 ? -1.45 : boss.move === 1 ? -0.85 : -1.8
+		: boss.state === 'attack'
+			? boss.move === 0 ? 0.95 : boss.move === 1 ? 1.4 : 0.45
+			: boss.state === 'recover' ? 0.35 : -0.05;
 	ctx.rotate(weaponAngle);
 	drawLine(ctx, 0, 16, 0, -72, '#9fc9ce', 4);
 	drawLine(ctx, -10, -58, 0, -76, '#c4e7e7', 3);
@@ -199,9 +218,10 @@ export function drawKnight(
 	time: number,
 	phase2: boolean,
 	fightId: FightId,
+	charging = false,
 ): void {
 	if (!isBoss) {
-		drawPlayer(ctx, entity as PlayerState, time);
+		drawPlayer(ctx, entity as PlayerState, time, charging);
 		return;
 	}
 	const bossDrawers: Record<FightId, (ctx: CanvasRenderingContext2D, boss: BossState, time: number, phase2: boolean) => void> = {
