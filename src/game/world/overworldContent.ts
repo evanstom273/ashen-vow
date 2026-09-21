@@ -31,6 +31,7 @@ export interface WorldProp {
 	collisionRadius?: number;
 	collisionRect?: { x: number; y: number; w: number; h: number };
 	rotation?: number;
+	variant?: number;
 }
 
 export const ROUTE_POINTS: readonly Vec2[] = [
@@ -77,14 +78,14 @@ function buildForest(): WorldProp[] {
 	const random = mulberry32(0xa5e7f013);
 	const props: WorldProp[] = [];
 
-	for (let i = 0; i < 310; i++) {
+	for (let i = 0; i < 190; i++) {
 		const x = 80 + random() * (OVERWORLD_SIZE - 160);
 		const y = 80 + random() * (OVERWORLD_SIZE - 160);
 		const point = { x, y };
 		const fromGrace = Math.hypot(x - GRACE_POSITION.x, y - GRACE_POSITION.y);
 		const routeDistance = distanceToRoute(point);
 		const routeProgress = Math.max(0, Math.min(1, (x - GRACE_POSITION.x) / (AERON_GATE_POSITION.x - GRACE_POSITION.x)));
-		const pathClearance = 85 + routeProgress * 95;
+		const pathClearance = 115 + routeProgress * 115;
 
 		if (fromGrace < 230 || routeDistance < pathClearance) continue;
 		if (x > 2650 && y > 1150 && y < 1660) continue;
@@ -98,15 +99,16 @@ function buildForest(): WorldProp[] {
 			sortY: y + 18 * scale,
 			scale,
 			collisionRadius: 18 * scale,
-			rotation: random() * Math.PI * 2,
+			rotation: 0,
+			variant: Math.floor(random() * 4),
 		});
 	}
 
-	for (let i = 0; i < 80; i++) {
+	for (let i = 0; i < 46; i++) {
 		const x = 100 + random() * (OVERWORLD_SIZE - 200);
 		const y = 100 + random() * (OVERWORLD_SIZE - 200);
 		if (Math.hypot(x - GRACE_POSITION.x, y - GRACE_POSITION.y) < 180) continue;
-		if (distanceToRoute({ x, y }) < 60) continue;
+		if (distanceToRoute({ x, y }) < 82) continue;
 		const scale = 0.65 + random() * 0.7;
 		props.push({
 			id: `rock-${i}`,
