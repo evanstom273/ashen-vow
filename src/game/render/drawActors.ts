@@ -175,8 +175,11 @@ export function drawKnight(
 		drawPlayer(ctx, entity as PlayerState, time);
 		return;
 	}
-	if (fightId === 'vael') drawStarSeer(ctx, entity as BossState, time, phase2);
-	else drawHollowKing(ctx, entity as BossState, time, phase2);
+	const bossDrawers: Record<FightId, (ctx: CanvasRenderingContext2D, boss: BossState, time: number, phase2: boolean) => void> = {
+		aeron: drawHollowKing,
+		vael: drawStarSeer,
+	};
+	bossDrawers[fightId](ctx, entity as BossState, time, phase2);
 }
 
 export function drawProjectiles(ctx: CanvasRenderingContext2D, shots: Shot[], time: number): void {
