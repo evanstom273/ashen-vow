@@ -264,6 +264,9 @@ export interface GameState {
 	phase2: boolean;
 	utilityItem: UtilityItemId;
 	hitStop: number;
+	postFight: boolean;
+	bossDeathProgress: number;
+	arenaExitActive: boolean;
 }
 
 export interface StickInput {

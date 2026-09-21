@@ -9,6 +9,7 @@ import { GameEventBus } from './events/GameEventBus.ts';
 import { SceneController } from './flow/SceneController.ts';
 import { InputSystem } from './input/InputSystem.ts';
 import { CanvasRenderer } from './render/CanvasRenderer.ts';
+import { getArenaExitPosition } from './render/drawArena.ts';
 import { updateBoss } from './systems/bossUpdate.ts';
 import { constrainToArea, type CombatContext } from './systems/combat.ts';
 import { updateHazards } from './systems/hazards.ts';
@@ -132,6 +133,7 @@ export class Game {
 	}
 
 	private enterWorld(spawnId: string): void {
+		document.body.classList.remove('post-fight');
 		this.resetTravelMotion();
 		this.bossIntroActive = false;
 		this.overlay.hideBossIntro();
@@ -150,6 +152,7 @@ export class Game {
 	}
 
 	private prepareCombat(fightId: FightId, originAreaId: AreaId | null, preserveResources: boolean): void {
+		document.body.classList.remove('post-fight');
 		this.resetTravelMotion();
 		this.audio.init();
 		this.state.fightId = fightId;
@@ -212,6 +215,7 @@ export class Game {
 		const from = (this.state.scene.kind === 'dead' || this.state.scene.kind === 'victory')
 			? { x: viewport.w / 2, y: viewport.h / 2 }
 			: this.renderer.getActorScreenPosition(this.state);
+		this.scenes.transition('transition', this.state.currentAreaId);
 		await this.overlay.closeIris(from.x, from.y, 'THE ASHEN WILDS');
 		this.enterWorld(spawnId);
 		await wait(100);
@@ -282,24 +286,31 @@ export class Game {
 		this.state.charging = false;
 		this.overlay.hideBossIntro();
 		this.bossIntroActive = false;
-		const returnToWorld = this.state.encounterOriginAreaId === 'ashen-wilds';
+
 		if (win) {
 			markBossDefeated(this.state.world, this.state.fightId);
 			this.events.emit({ type: 'bossDefeated', fightId: this.state.fightId });
-			this.scenes.transition('victory', this.state.currentAreaId);
-		} else {
-			this.events.emit({ type: 'playerDied', fightId: this.state.fightId });
-			this.scenes.transition('dead', this.state.currentAreaId);
+			this.state.postFight = true;
+			this.state.bossDeathProgress = 0;
+			this.state.arenaExitActive = false;
+			this.state.shots = [];
+			this.state.hazards = [];
+			this.state.boss.moving = false;
+			document.body.classList.add('post-fight');
+			this.hud.setInteractionPrompt(null);
+			this.hud.setContextAction('roll');
+			spawnBurst(this.state, this.state.boss.x, this.state.boss.y, getFightDefinition(this.state.fightId).visuals.phaseBurst, 52, 120);
+			this.audio.play(52, 0.8, 'sawtooth', 0.035);
+			return;
 		}
 
+		this.events.emit({ type: 'playerDied', fightId: this.state.fightId });
+		this.scenes.transition('dead', this.state.currentAreaId);
+		const returnToWorld = this.state.encounterOriginAreaId === 'ashen-wilds';
 		window.setTimeout(() => {
-			if (this.state.scene.kind !== 'dead' && this.state.scene.kind !== 'victory') return;
-			if (win) {
-				this.overlay.showVictoryScreen(this.state.attempts, this.state.fightId, returnToWorld);
-			} else {
-				const percentTaken = Math.round((1 - this.state.boss.hp / this.state.boss.baseMax) * 100);
-				this.overlay.showDeathScreen(this.state.attempts, percentTaken, this.state.fightId, returnToWorld);
-			}
+			if (this.state.scene.kind !== 'dead') return;
+			const percentTaken = Math.round((1 - this.state.boss.hp / this.state.boss.baseMax) * 100);
+			this.overlay.showDeathScreen(this.state.attempts, percentTaken, this.state.fightId, returnToWorld);
 		}, 1000);
 	}
 
@@ -360,6 +371,17 @@ export class Game {
 	}
 
 	private performWorldInteraction(): boolean {
+		if (this.state.scene.kind === 'combat' && this.state.postFight && this.state.arenaExitActive) {
+			const exit = getArenaExitPosition(this.state.currentAreaId);
+			if (Math.hypot(this.state.player.x - exit.x, this.state.player.y - exit.y) <= 92) {
+				this.hud.setInteractionPrompt(null);
+				this.hud.setContextAction('roll');
+				const spawnId = this.state.encounterOriginAreaId === 'ashen-wilds' ? 'aeron-return' : 'grace';
+				this.state.encounterOriginAreaId = null;
+				void this.transitionToWorld(spawnId);
+				return true;
+			}
+		}
 		if (this.state.scene.kind !== 'world') return false;
 		if (isNearGrace(this.state.player)) {
 			this.restAtGrace();
@@ -475,7 +497,7 @@ export class Game {
 			return false;
 		}
 		const direction = target > player.transformProgress ? 1 : -1;
-		player.transformProgress = Math.max(0, Math.min(1, player.transformProgress + direction * dt / 0.48));
+		player.transformProgress = Math.max(0, Math.min(1, player.transformProgress + direction * dt / 0.9));
 		player.transformed = player.transformProgress >= 0.98 && player.transformTarget;
 		const form = getTravelFormDefinition(player.selectedTravelForm);
 		if (Math.random() < 0.45) spawnBurst(this.state, player.x, player.y, form.accentSoft, 1, 40);
@@ -484,12 +506,11 @@ export class Game {
 
 	private movementScale(sprinting: boolean): number {
 		const { player } = this.state;
-		if (!player.transformed) {
-			const speed = sprinting ? PLAYER_TUNING.movement.sprintSpeed : PLAYER_TUNING.movement.normalSpeed;
-			return speed / PLAYER_TUNING.movement.normalSpeed;
-		}
 		const form = getTravelFormDefinition(player.selectedTravelForm);
-		const speed = sprinting ? form.sprintSpeed : form.walkSpeed;
+		const humanSpeed = sprinting ? PLAYER_TUNING.movement.sprintSpeed : PLAYER_TUNING.movement.normalSpeed;
+		const beastSpeed = sprinting ? form.sprintSpeed : form.walkSpeed;
+		const morph = player.transformProgress * player.transformProgress * (3 - 2 * player.transformProgress);
+		const speed = humanSpeed + (beastSpeed - humanSpeed) * morph;
 		return speed / PLAYER_TUNING.movement.normalSpeed;
 	}
 
@@ -530,6 +551,11 @@ export class Game {
 		updateSpellCooldowns(this.state, dt);
 		this.updateTransformation(dt);
 
+		if (this.state.postFight) {
+			this.updatePostFight(dt);
+			return;
+		}
+
 		if (this.bossIntroActive) {
 			this.state.player.moving = false;
 			this.state.boss.moving = false;
@@ -553,6 +579,46 @@ export class Game {
 		updateBossEffects(this.combatContext, dt);
 		updateProjectiles(this.combatContext, dt);
 		updateHazards(this.combatContext, dt);
+		this.hud.sync(this.state);
+	}
+
+	private updatePostFight(dt: number): void {
+		const movement = this.input.getMovementInput();
+		const moving = Math.hypot(movement.x, movement.y) > 0.12;
+		const sprinting = this.applySprintDrain(dt, 10, moving);
+		updatePlayerMovement(this.state, movement, dt, this.movementScale(sprinting));
+		constrainToArea(this.state.player, this.state.currentAreaId);
+
+		if (this.state.bossDeathProgress < 1) {
+			const previous = this.state.bossDeathProgress;
+			this.state.bossDeathProgress = Math.min(1, previous + dt / 1.85);
+			if (Math.random() < 0.35) {
+				spawnBurst(
+					this.state,
+					this.state.boss.x + (Math.random() - 0.5) * 36,
+					this.state.boss.y + (Math.random() - 0.5) * 44,
+					getFightDefinition(this.state.fightId).visuals.phaseBurst,
+					1,
+					48,
+				);
+			}
+			if (this.state.bossDeathProgress >= 1) {
+				this.state.arenaExitActive = true;
+				this.announce('VOW FULFILLED · RETURN WHEN READY', 3);
+				this.audio.play(430, 0.65, 'sine', 0.025);
+			}
+		}
+
+		if (this.state.arenaExitActive) {
+			const exit = getArenaExitPosition(this.state.currentAreaId);
+			const nearExit = Math.hypot(this.state.player.x - exit.x, this.state.player.y - exit.y) <= 92;
+			this.hud.setInteractionPrompt(nearExit ? 'TAP CENTER / F / A · LEAVE ARENA' : null);
+			this.hud.setContextAction(nearExit ? 'exit' : 'roll');
+		} else {
+			this.hud.setInteractionPrompt(null);
+			this.hud.setContextAction('roll');
+		}
+
 		this.hud.sync(this.state);
 	}
 

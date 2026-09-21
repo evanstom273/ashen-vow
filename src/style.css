@@ -32,3 +32,7 @@ body.boss-intro #bossHud{opacity:0}body.boss-intro #actionSlots{opacity:.35;poin
 .transition-curtain{position:absolute;inset:0;z-index:30;pointer-events:none;visibility:hidden}.transition-curtain.is-active{visibility:visible}.iris-hole{position:absolute;left:var(--iris-x,50%);top:var(--iris-y,50%);width:220vmax;height:220vmax;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 220vmax #050706;transition:width .55s cubic-bezier(.65,0,.35,1),height .55s cubic-bezier(.65,0,.35,1)}.transition-curtain.is-closed .iris-hole{width:0;height:0}.loading-card{position:absolute;inset:0;display:grid;place-content:center;gap:12px;text-align:center;background:#050706;color:#d8d0b8}.loading-card small{font:9px Arial,sans-serif;letter-spacing:5px;color:#81765d}.loading-card strong{font:18px Georgia;font-weight:400;letter-spacing:3px}.loading-card span{font-size:24px;animation:loadingPulse 1s ease-in-out infinite}@keyframes loadingPulse{50%{opacity:.35;transform:scale(.8)}}
 
 .grace-menu[hidden],.boss-dialogue[hidden],.loading-card[hidden]{display:none!important}
+
+body.combat.post-fight #bossHud{opacity:0}
+body.combat.post-fight.near-interaction #interactionPrompt{opacity:1}
+body.combat.post-fight #slotRight{opacity:.45}

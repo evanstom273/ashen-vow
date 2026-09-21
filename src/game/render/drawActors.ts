@@ -6,8 +6,9 @@ import { drawCircle, drawLine } from './primitives.ts';
 import { drawTravelForm } from './travelFormRenderer.ts';
 
 function drawPlayer(ctx: CanvasRenderingContext2D, player: PlayerState, time: number, charging: boolean): void {
-	if (player.transformed || player.transformProgress >= 0.5) {
-		drawTravelForm(ctx, player, time);
+	const morph = Math.max(0, Math.min(1, player.transformProgress));
+	if (morph >= 0.999) {
+		drawTravelForm(ctx, player, time, 1);
 		return;
 	}
 	const radius = 13;
@@ -26,6 +27,10 @@ function drawPlayer(ctx: CanvasRenderingContext2D, player: PlayerState, time: nu
 	drawCircle(ctx, 2, 12 / shadowSquash, radius * 1.1, '#0007');
 	ctx.restore();
 	ctx.translate(0, -bob);
+	const humanoidOpacity = 1 - morph * 0.82;
+	ctx.globalAlpha *= humanoidOpacity;
+	ctx.scale(1 + morph * 0.28, 1 - morph * 0.38);
+	ctx.translate(0, morph * 8);
 	const dodgeTwist = player.roll > 0 ? Math.sin((0.34 - player.roll) / 0.34 * Math.PI) * 0.78 : 0;
 	const castLean = charging ? -0.12 : player.swing > 0 ? 0.18 : 0;
 	ctx.rotate(player.angle + Math.PI / 2 + sway + dodgeTwist + castLean);
@@ -63,9 +68,35 @@ function drawPlayer(ctx: CanvasRenderingContext2D, player: PlayerState, time: nu
 	drawLine(ctx, -8, 0, 8, 0, '#ac9461', 3);
 	ctx.restore();
 	ctx.restore();
+
+	if (morph > 0) drawTravelForm(ctx, player, time, morph);
 }
 
-function drawHollowKing(ctx: CanvasRenderingContext2D, boss: BossState, time: number, phase2: boolean): void {
+function applyBossDeathPose(
+	ctx: CanvasRenderingContext2D,
+	boss: BossState,
+	time: number,
+	progress: number,
+	accent: string,
+): void {
+	if (progress <= 0) return;
+	const p = Math.max(0, Math.min(1, progress));
+	ctx.translate(Math.sin(time * 8) * p * 2.5, p * 24);
+	ctx.rotate((boss.x < 500 ? -1 : 1) * p * 0.9);
+	ctx.scale(1 + p * 0.08, Math.max(0.35, 1 - p * 0.58));
+	ctx.globalAlpha *= Math.max(0.05, 1 - p * 0.95);
+	ctx.save();
+	ctx.rotate(-boss.angle - Math.PI / 2);
+	ctx.globalAlpha = Math.min(0.65, p * 0.9);
+	for (let i = 0; i < 12; i++) {
+		const a = i * 2.399 + time * (0.5 + i * 0.015);
+		const r = 12 + p * (22 + (i % 4) * 8);
+		drawCircle(ctx, Math.cos(a) * r, Math.sin(a) * r - p * 18, 2 + (i % 3), accent);
+	}
+	ctx.restore();
+}
+
+function drawHollowKing(ctx: CanvasRenderingContext2D, boss: BossState, time: number, phase2: boolean, deathProgress: number): void {
 	const radius = 25;
 	const step = boss.moving ? Math.sin(time * (phase2 ? 8.2 : 6.6)) : 0;
 	const bob = boss.moving ? Math.abs(step) * (phase2 ? 3.2 : 2.5) : 0;
@@ -74,7 +105,8 @@ function drawHollowKing(ctx: CanvasRenderingContext2D, boss: BossState, time: nu
 
 	ctx.save();
 	ctx.translate(boss.x, boss.y);
-	if (boss.hitReact > 0) ctx.translate(Math.sin(time * 70) * 5, 0);
+	applyBossDeathPose(ctx, boss, time, deathProgress, '#d8b678');
+	if (boss.hitReact > 0 && deathProgress <= 0) ctx.translate(Math.sin(time * 70) * 5, 0);
 	ctx.save();
 	ctx.scale(1 + bob * 0.012, 1 - bob * 0.009);
 	drawCircle(ctx, 2, 12, radius * 1.1, '#0007');
@@ -127,7 +159,7 @@ function drawHollowKing(ctx: CanvasRenderingContext2D, boss: BossState, time: nu
 	ctx.restore();
 }
 
-function drawStarSeer(ctx: CanvasRenderingContext2D, boss: BossState, time: number, phase2: boolean): void {
+function drawStarSeer(ctx: CanvasRenderingContext2D, boss: BossState, time: number, phase2: boolean, deathProgress: number): void {
 	const r = 27;
 	const step = boss.moving ? Math.sin(time * (phase2 ? 8.8 : 7.1)) : 0;
 	const bob = boss.moving ? Math.abs(step) * (phase2 ? 3.5 : 2.7) : 0;
@@ -136,7 +168,8 @@ function drawStarSeer(ctx: CanvasRenderingContext2D, boss: BossState, time: numb
 
 	ctx.save();
 	ctx.translate(boss.x, boss.y);
-	if (boss.hitReact > 0) ctx.translate(Math.sin(time * 76) * 4, 0);
+	applyBossDeathPose(ctx, boss, time, deathProgress, '#b7e1df');
+	if (boss.hitReact > 0 && deathProgress <= 0) ctx.translate(Math.sin(time * 76) * 4, 0);
 	ctx.save();
 	ctx.scale(1 + bob * 0.01, 1 - bob * 0.008);
 	drawCircle(ctx, 3, 14, 31, '#0008');
@@ -219,16 +252,18 @@ export function drawKnight(
 	phase2: boolean,
 	fightId: FightId,
 	charging = false,
+	deathProgress = 0,
 ): void {
 	if (!isBoss) {
 		drawPlayer(ctx, entity as PlayerState, time, charging);
 		return;
 	}
-	const bossDrawers: Record<FightId, (ctx: CanvasRenderingContext2D, boss: BossState, time: number, phase2: boolean) => void> = {
+	if (deathProgress >= 1) return;
+	const bossDrawers: Record<FightId, (ctx: CanvasRenderingContext2D, boss: BossState, time: number, phase2: boolean, deathProgress: number) => void> = {
 		aeron: drawHollowKing,
 		vael: drawStarSeer,
 	};
-	bossDrawers[fightId](ctx, entity as BossState, time, phase2);
+	bossDrawers[fightId](ctx, entity as BossState, time, phase2, deathProgress);
 }
 
 export function drawProjectiles(ctx: CanvasRenderingContext2D, shots: Shot[], time: number): void {

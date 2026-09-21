@@ -5,8 +5,9 @@ import { getArtTheme } from './artThemes.ts';
 import { getWorldCamera, renderOverworld } from '../world/overworldRenderer.ts';
 import {
 	drawArena,
+	drawArenaExit,
 	drawAtmosphericDust,
-		drawHazards,
+	drawHazards,
 } from './drawArena.ts';
 import { drawBossTelegraph } from './bossTelegraphs.ts';
 import { getEquippedSpellDefinition } from '../state/spellState.ts';
@@ -89,14 +90,17 @@ export class CanvasRenderer {
 		ctx.scale(scale, scale);
 
 		drawArena(ctx, state.time, state.currentAreaId);
-		drawBossTelegraph(ctx, state.boss, mode, state.time, state.fightId);
-		drawHazards(ctx, state.hazards, state.fightId);
+		if (!state.postFight) {
+			drawBossTelegraph(ctx, state.boss, mode, state.time, state.fightId);
+			drawHazards(ctx, state.hazards, state.fightId);
+		}
+		if (state.arenaExitActive) drawArenaExit(ctx, state.time, state.currentAreaId);
 
 		if (state.player.y < state.boss.y) {
 			drawKnight(ctx, state.player, false, state.time, state.phase2, state.fightId, state.charging);
-			drawKnight(ctx, state.boss, true, state.time, state.phase2, state.fightId);
+			drawKnight(ctx, state.boss, true, state.time, state.phase2, state.fightId, false, state.bossDeathProgress);
 		} else {
-			drawKnight(ctx, state.boss, true, state.time, state.phase2, state.fightId);
+			drawKnight(ctx, state.boss, true, state.time, state.phase2, state.fightId, false, state.bossDeathProgress);
 			drawKnight(ctx, state.player, false, state.time, state.phase2, state.fightId);
 		}
 
