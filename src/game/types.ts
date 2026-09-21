@@ -252,6 +252,7 @@ export interface GameState {
 	encounterOriginAreaId: AreaId | null;
 	world: WorldState;
 	attempts: number;
+	runes: number;
 	time: number;
 	player: PlayerState;
 	boss: BossState;
