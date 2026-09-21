@@ -29,15 +29,6 @@ export const TRAVEL_FORM_DEFINITIONS: Record<TravelFormId, TravelFormDefinition>
 		walkSpeed: 180,
 		sprintSpeed: 300,
 	},
-	feline: {
-		id: 'feline',
-		displayName: 'SIXFOLD CAT',
-		shortName: 'Sixfold',
-		accent: '#c7a7d8',
-		accentSoft: '#c7a7d844',
-		walkSpeed: 180,
-		sprintSpeed: 300,
-	},
 };
 
 export const TRAVEL_FORM_IDS = Object.keys(TRAVEL_FORM_DEFINITIONS) as TravelFormId[];

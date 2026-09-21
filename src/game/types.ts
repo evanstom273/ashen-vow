@@ -5,7 +5,7 @@ export type GameMode = 'title' | 'play' | 'pause' | 'dead' | 'win';
 
 export type SceneKind = 'title' | 'world' | 'combat' | 'pause' | 'transition' | 'dead' | 'victory';
 export type FightId = 'aeron' | 'vael';
-export type TravelFormId = 'raven' | 'wolf' | 'feline';
+export type TravelFormId = 'raven' | 'wolf';
 export type UtilityItemId = 'flask' | 'transform';
 export type AreaId = 'ashen-wilds' | 'aeron-arena' | 'vael-arena';
 export type AreaKind = 'overworld' | 'boss' | 'interior';
