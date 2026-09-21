@@ -4,6 +4,9 @@ import type { SpellId } from './content/spells.ts';
 export type GameMode = 'title' | 'play' | 'pause' | 'dead' | 'win';
 
 export type SceneKind = 'title' | 'world' | 'combat' | 'pause' | 'transition' | 'dead' | 'victory';
+export type EnemyId = 'aeron' | 'vael';
+export type EnemyCategory = 'regular' | 'boss';
+export type EnemyControllerId = 'aeron' | 'vael';
 export type FightId = 'aeron' | 'vael';
 export type TravelFormId = 'raven' | 'wolf';
 export type UtilityItemId = 'flask' | 'transform';
