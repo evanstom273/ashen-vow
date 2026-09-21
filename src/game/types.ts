@@ -280,6 +280,7 @@ export type PlayerAction =
 	| 'cycleSpell'
 	| 'cycleUtility'
 	| 'activateUtility'
+	| 'useConsumable'
 	| 'castStart'
 	| 'castRelease'
 	| 'interact'
