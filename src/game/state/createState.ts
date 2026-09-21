@@ -1,6 +1,8 @@
 import { PLAYER_START } from '../content/playerDefaults.ts';
+import { getAreaForFight } from '../content/areas.ts';
 import { getFightDefinition } from '../content/fights.ts';
 import { initializeSpellLoadout, replenishSpellsAtRest } from './spellState.ts';
+import { createInitialWorldState } from './worldState.ts';
 import type { BossState, FightId, GameState, InputState, PlayerState } from '../types.ts';
 
 export function createPlayerState(): PlayerState {
@@ -36,13 +38,18 @@ export function createBossState(fightId: FightId): BossState {
 }
 
 export function createInitialGameState(): GameState {
+	const initialFight: FightId = 'aeron';
+	const initialArea = getAreaForFight(initialFight);
 	const state: GameState = {
 		mode: 'title',
-		fightId: 'aeron',
+		scene: { kind: 'title', areaId: null, previousKind: null },
+		currentAreaId: initialArea.id,
+		fightId: initialFight,
+		world: createInitialWorldState(),
 		attempts: 0,
 		time: 0,
 		player: createPlayerState(),
-		boss: createBossState('aeron'),
+		boss: createBossState(initialFight),
 		shots: [],
 		particles: [],
 		hazards: [],
@@ -68,7 +75,15 @@ export function createInitialInputState(): InputState {
 }
 
 export function resetCombatState(state: GameState): void {
+	const area = getAreaForFight(state.fightId);
+	const spawn = area.spawns[0];
+	state.currentAreaId = area.id;
 	state.player = createPlayerState();
+	if (spawn) {
+		state.player.x = spawn.position.x;
+		state.player.y = spawn.position.y;
+		state.player.angle = spawn.facing;
+	}
 	state.boss = createBossState(state.fightId);
 	state.shots = [];
 	state.particles = [];
