@@ -1,5 +1,5 @@
 import type { GameState, Viewport } from '../types.ts';
-import { drawKnight } from '../render/drawActors.ts';
+import { drawKnight, drawParticles } from '../render/drawActors.ts';
 import { drawCircle, drawLine } from '../render/primitives.ts';
 import {
 	AERON_GATE_POSITION,
@@ -334,6 +334,7 @@ export function renderOverworld(
 	});
 	layers.sort((a, b) => a.sortY - b.sortY);
 	for (const layer of layers) layer.draw();
+	drawParticles(ctx, state.particles);
 
 	ctx.restore();
 }
