@@ -1,8 +1,8 @@
 import { MAX_DELTA_TIME } from './constants.ts';
 import { AudioManager } from './audio/AudioManager.ts';
-import { getAreaForFight } from './content/areas.ts';
+import { getAreaForFight, getAreaSpawn } from './content/areas.ts';
 import { getFightDefinition } from './content/fights.ts';
-import { decayShake, updateParticles } from './effects/particles.ts';
+import { decayShake, spawnBurst, updateParticles } from './effects/particles.ts';
 import { GameEventBus } from './events/GameEventBus.ts';
 import { SceneController } from './flow/SceneController.ts';
 import { InputSystem } from './input/InputSystem.ts';
@@ -25,7 +25,13 @@ import { updateSpellCooldowns } from './state/spellState.ts';
 import { markBossDefeated, respawnBoss } from './state/worldState.ts';
 import { DomHud } from './ui/DomHud.ts';
 import { OverlayController } from './ui/OverlayController.ts';
-import type { FightId, GameState, InputState, PlayerAction } from './types.ts';
+import { restAtCheckpoint, reviveAtCheckpoint } from './world/checkpoints.ts';
+import {
+	isInsideAeronGate,
+	isNearGrace,
+	resolveOverworldCollisions,
+} from './world/overworldContent.ts';
+import type { AreaId, FightId, GameState, InputState, PlayerAction } from './types.ts';
 
 export class Game {
 	private readonly state: GameState = createInitialGameState();
@@ -46,7 +52,7 @@ export class Game {
 			(action) => this.onAction(action),
 			() => this.onCastRelease(),
 			() => this.state.mode,
-			() => this.start(),
+			() => this.enterWorld('grace'),
 		);
 		this.input.bindKeyboard();
 		this.input.bindTouch();
@@ -55,17 +61,18 @@ export class Game {
 		const secondFightButton = document.getElementById('secondFight');
 		const menuButton = document.getElementById('menu');
 		const pauseButton = document.getElementById('pause');
+
 		beginButton?.addEventListener('click', () => {
-			if (this.state.scene.kind === 'title') this.startFight('aeron');
+			if (this.state.scene.kind === 'title') this.enterWorld('grace');
 			else this.start();
 		});
-		secondFightButton?.addEventListener('click', () => this.startFight('vael'));
+		secondFightButton?.addEventListener('click', () => this.startFight('vael', null, false));
 		menuButton?.addEventListener('click', () => this.returnToMenu());
 		pauseButton?.addEventListener('click', () => this.togglePause());
 		this.overlay.showMainMenu();
 
 		addEventListener('blur', () => {
-			if (this.state.scene.kind === 'combat') this.togglePause();
+			if (this.state.scene.kind === 'combat' || this.state.scene.kind === 'world') this.togglePause();
 		});
 
 		requestAnimationFrame((now) => this.frame(now));
@@ -84,19 +91,49 @@ export class Game {
 		this.hud.announceWithTimer(this.state, message, duration);
 	}
 
-	private startFight(fightId: FightId): void {
-		this.state.fightId = fightId;
-		this.state.currentAreaId = getAreaForFight(fightId).id;
-		respawnBoss(this.state.world, fightId);
-		this.beginCombatAttempt();
+	private positionPlayer(areaId: AreaId, spawnId: string): void {
+		const spawn = getAreaSpawn(areaId, spawnId);
+		if (!spawn) return;
+		this.state.player.x = spawn.position.x;
+		this.state.player.y = spawn.position.y;
+		this.state.player.angle = spawn.facing;
+		this.state.player.dx = Math.cos(spawn.facing);
+		this.state.player.dy = Math.sin(spawn.facing);
+		this.state.player.roll = 0;
+		this.state.player.heal = 0;
+		this.state.player.inv = 0;
 	}
 
-	private beginCombatAttempt(): void {
+	private enterWorld(spawnId: string): void {
+		if (this.state.player.hp <= 0) reviveAtCheckpoint(this.state);
+		this.state.currentAreaId = 'ashen-wilds';
+		this.positionPlayer('ashen-wilds', spawnId);
+		this.state.shots = [];
+		this.state.hazards = [];
+		this.state.charging = false;
+		this.state.charge = 0;
+		this.scenes.transition('world', 'ashen-wilds');
+		this.overlay.setGameplayScene('world');
+		this.hud.sync(this.state);
+		this.updateWorldInteractionPrompt();
+		this.lastFrameTime = performance.now();
+	}
+
+	private startFight(fightId: FightId, originAreaId: AreaId | null, preserveResources: boolean): void {
+		this.state.fightId = fightId;
+		this.state.encounterOriginAreaId = originAreaId;
+		this.state.currentAreaId = getAreaForFight(fightId).id;
+		if (!originAreaId) respawnBoss(this.state.world, fightId);
+		this.beginCombatAttempt(preserveResources);
+	}
+
+	private beginCombatAttempt(preserveResources: boolean): void {
 		this.audio.init();
-		resetCombatState(this.state);
+		resetCombatState(this.state, preserveResources);
 		this.state.attempts += 1;
 		this.scenes.enterCombat(this.state.currentAreaId);
-		this.overlay.setPlaying(true);
+		this.overlay.setGameplayScene('combat');
+		this.hud.setInteractionPrompt(null);
 		this.hud.sync(this.state);
 		this.announce(getFightDefinition(this.state.fightId).introAnnouncement, 2.5);
 		this.lastFrameTime = performance.now();
@@ -105,7 +142,9 @@ export class Game {
 	private returnToMenu(): void {
 		this.state.charging = false;
 		this.state.charge = 0;
+		this.state.encounterOriginAreaId = null;
 		this.input.clearKeys();
+		this.hud.setInteractionPrompt(null);
 		this.scenes.returnToTitle();
 		this.overlay.showMainMenu();
 	}
@@ -114,13 +153,22 @@ export class Game {
 		if (this.state.scene.kind === 'pause') {
 			const resumeScene = this.state.scene.previousKind === 'world' ? 'world' : 'combat';
 			this.scenes.transition(resumeScene, this.state.currentAreaId);
-			this.overlay.setPlaying(true);
+			this.overlay.setGameplayScene(resumeScene);
+			this.updateWorldInteractionPrompt();
 			this.lastFrameTime = performance.now();
 			return;
 		}
 
-		respawnBoss(this.state.world, this.state.fightId);
-		this.beginCombatAttempt();
+		if ((this.state.scene.kind === 'dead' || this.state.scene.kind === 'victory') && this.state.encounterOriginAreaId === 'ashen-wilds') {
+			const wasDead = this.state.scene.kind === 'dead';
+			if (wasDead) reviveAtCheckpoint(this.state);
+			const spawnId = wasDead ? 'grace' : 'aeron-return';
+			this.state.encounterOriginAreaId = null;
+			this.enterWorld(spawnId);
+			return;
+		}
+
+		this.startFight(this.state.fightId, null, false);
 	}
 
 	private togglePause(): void {
@@ -131,15 +179,18 @@ export class Game {
 			return;
 		}
 
+		const inWorld = this.state.scene.kind === 'world';
 		this.scenes.transition('pause', this.state.currentAreaId);
 		this.input.clearKeys();
 		this.state.charging = false;
 		this.state.charge = 0;
-		this.overlay.showPauseScreen();
+		this.hud.setInteractionPrompt(null);
+		this.overlay.showPauseScreen(inWorld);
 	}
 
 	private end(win: boolean): void {
 		this.state.charging = false;
+		const returnToWorld = this.state.encounterOriginAreaId === 'ashen-wilds';
 		if (win) {
 			markBossDefeated(this.state.world, this.state.fightId);
 			this.events.emit({ type: 'bossDefeated', fightId: this.state.fightId });
@@ -151,17 +202,39 @@ export class Game {
 
 		window.setTimeout(() => {
 			if (this.state.scene.kind !== 'dead' && this.state.scene.kind !== 'victory') return;
-
 			if (win) {
-				this.overlay.showVictoryScreen(this.state.attempts, this.state.fightId);
+				this.overlay.showVictoryScreen(this.state.attempts, this.state.fightId, returnToWorld);
 			} else {
 				const percentTaken = Math.round((1 - this.state.boss.hp / this.state.boss.baseMax) * 100);
-				this.overlay.showDeathScreen(this.state.attempts, percentTaken, this.state.fightId);
+				this.overlay.showDeathScreen(this.state.attempts, percentTaken, this.state.fightId, returnToWorld);
 			}
 		}, 1000);
 	}
 
+	private restAtGrace(): void {
+		restAtCheckpoint(this.state, 'ashen-wilds-grace');
+		this.events.emit({ type: 'checkpointRested', checkpointId: 'ashen-wilds-grace' });
+		spawnBurst(this.state, this.state.player.x, this.state.player.y, '#e9cb75', 38, 90);
+		this.audio.init();
+		this.audio.play(520, 0.55, 'sine', 0.035);
+		this.announce('GRACE RESTORED · BOSSES RETURN', 2.4);
+		this.hud.sync(this.state);
+	}
+
+	private updateWorldInteractionPrompt(): void {
+		if (this.state.scene.kind !== 'world') {
+			this.hud.setInteractionPrompt(null);
+			return;
+		}
+		this.hud.setInteractionPrompt(isNearGrace(this.state.player) ? 'F / A · REST AT GRACE' : null);
+	}
+
 	private onAction(action: PlayerAction): void {
+		if (action === 'interact') {
+			if (this.state.scene.kind === 'world' && isNearGrace(this.state.player)) this.restAtGrace();
+			return;
+		}
+
 		handlePlayerAction(
 			{
 				...this.combatContext,
@@ -176,14 +249,26 @@ export class Game {
 		releaseCast(this.combatContext);
 	}
 
-	private update(dt: number): void {
-		this.input.pollGamepad();
-		this.state.time += dt;
-		updateParticles(this.state, dt);
-		decayShake(this.state, dt);
+	private updateWorld(dt: number): void {
+		this.hud.tickNotice(this.state, dt);
+		updatePlayerRegen(this.state, dt);
+		updatePlayerHealing(this.combatContext, dt);
+		updateSpellCooldowns(this.state, dt);
 
-		if (this.state.scene.kind !== 'combat') return;
+		const movement = this.input.getMovementInput();
+		updatePlayerMovement(this.state, movement, dt);
+		constrainToArea(this.state.player, 'ashen-wilds');
+		resolveOverworldCollisions(this.state.player);
 
+		this.updateWorldInteractionPrompt();
+		this.hud.sync(this.state);
+
+		if (isInsideAeronGate(this.state.player) && this.state.world.bosses.aeron.alive) {
+			this.startFight('aeron', 'ashen-wilds', true);
+		}
+	}
+
+	private updateCombat(dt: number): void {
 		this.hud.tickNotice(this.state, dt);
 		updatePlayerRegen(this.state, dt);
 		updatePlayerHealing(this.combatContext, dt);
@@ -205,6 +290,19 @@ export class Game {
 		updateProjectiles(this.combatContext, dt);
 		updateHazards(this.combatContext, dt);
 		this.hud.sync(this.state);
+	}
+
+	private update(dt: number): void {
+		this.input.pollGamepad();
+		this.state.time += dt;
+		updateParticles(this.state, dt);
+		decayShake(this.state, dt);
+
+		if (this.state.scene.kind === 'world') {
+			this.updateWorld(dt);
+			return;
+		}
+		if (this.state.scene.kind === 'combat') this.updateCombat(dt);
 	}
 
 	private frame(now: number): void {
