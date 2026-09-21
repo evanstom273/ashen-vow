@@ -45,7 +45,7 @@ function drawPlayer(ctx: CanvasRenderingContext2D, player: PlayerState, time: nu
 	ctx.restore();
 }
 
-function drawHollowKing(ctx: CanvasRenderingContext2D, boss: BossState, time: number, phase2: boolean): void {
+function drawHollowKing(ctx: CanvasRenderingContext2D, boss: BossState, _time: number, phase2: boolean): void {
 	const radius = 25;
 	ctx.save();
 	ctx.translate(boss.x, boss.y);

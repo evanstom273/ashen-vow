@@ -141,7 +141,8 @@ export function drawArena(ctx: CanvasRenderingContext2D, time: number, fightId: 
 export function drawBossTelegraph(ctx: CanvasRenderingContext2D, boss: BossState, mode: GameMode, time: number, fightId: FightId): void {
 	if (boss.state !== 'windup' || mode !== 'play') return;
 	const fight = getFightDefinition(fightId);
-	const alpha = 0.12 + Math.sin(time * 15) * 0.05;
+	const pulseAlpha = 0.86 + Math.sin(time * 15) * 0.08;
+	ctx.globalAlpha = pulseAlpha;
 	if (boss.move === 0) {
 		const r = fight.attacks[0].meleeRadius;
 		drawCircle(ctx, boss.x, boss.y, r, fight.visuals.accentSoft, fight.visuals.accent, 2);
@@ -159,6 +160,7 @@ export function drawBossTelegraph(ctx: CanvasRenderingContext2D, boss: BossState
 		drawCircle(ctx, boss.tx, boss.ty, r, fight.visuals.accentSoft, fight.visuals.accent, 2);
 		drawCircle(ctx, boss.tx, boss.ty, r * (1 - clamp(boss.timer / fight.attacks[2].windup, 0, 1)), null, fight.visuals.accent, 2);
 	}
+	ctx.globalAlpha = 1;
 }
 
 export function drawHazards(ctx: CanvasRenderingContext2D, hazards: Hazard[], fightId: FightId): void {
