@@ -208,3 +208,53 @@ export function drawAtmosphericDust(ctx: CanvasRenderingContext2D, time: number,
 		drawCircle(ctx, x, y, theme.id === 'orrery' && i % 9 === 0 ? 1.8 : 1, theme.dustColor);
 	}
 }
+
+
+export function getArenaExitPosition(areaId: AreaId): { x: number; y: number } {
+	const bounds = getAreaDefinition(areaId).bounds;
+	if (bounds.kind === 'circle') return { x: bounds.x, y: bounds.y };
+	return { x: (bounds.minX + bounds.maxX) / 2, y: (bounds.minY + bounds.maxY) / 2 };
+}
+
+export function drawArenaExit(
+	ctx: CanvasRenderingContext2D,
+	time: number,
+	areaId: AreaId,
+): void {
+	const pos = getArenaExitPosition(areaId);
+	const pulse = 0.5 + Math.sin(time * 3.2) * 0.15;
+	ctx.save();
+	ctx.translate(pos.x, pos.y);
+
+	const glow = ctx.createRadialGradient(0, 0, 4, 0, 0, 74);
+	glow.addColorStop(0, '#f5e8b7aa');
+	glow.addColorStop(0.3, '#d0b76866');
+	glow.addColorStop(1, '#d0b76800');
+	ctx.fillStyle = glow;
+	ctx.fillRect(-82, -82, 164, 164);
+
+	ctx.globalAlpha = 0.65 + pulse * 0.25;
+	drawCircle(ctx, 0, 0, 26, '#211c13cc', '#ddc37b', 2.5);
+	drawCircle(ctx, 0, 0, 13 + pulse * 4, '#d7bd6a33', '#f0dc9d', 2);
+	for (let i = 0; i < 8; i++) {
+		const a = time * 0.42 + (i * Math.PI * 2) / 8;
+		const inner = 34;
+		const outer = 47 + (i % 2) * 7;
+		drawLine(
+			ctx,
+			Math.cos(a) * inner,
+			Math.sin(a) * inner,
+			Math.cos(a) * outer,
+			Math.sin(a) * outer,
+			'#d7bd6a88',
+			1.5,
+		);
+	}
+	ctx.globalAlpha = 1;
+
+	ctx.fillStyle = '#efe2b8';
+	ctx.font = '11px Georgia';
+	ctx.textAlign = 'center';
+	ctx.fillText('RETURN', 0, -42);
+	ctx.restore();
+}
