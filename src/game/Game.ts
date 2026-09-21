@@ -105,9 +105,26 @@ export class Game {
 		return {
 			state: this.state,
 			audio: this.audio,
-			onPlayerDeath: () => this.end(false),
+			onPlayerDeath: () => this.handlePlayerDeath(),
 			onBossDefeated: () => this.end(true),
 		};
+	}
+
+	private handlePlayerDeath(): void {
+		if (this.state.scene.kind !== 'world') {
+			this.end(false);
+			return;
+		}
+		this.resetTravelMotion();
+		this.state.charging = false;
+		this.state.charge = 0;
+		this.state.shots = [];
+		this.state.worldEnemyProjectiles = [];
+		this.state.encounterOriginAreaId = 'ashen-wilds';
+		this.scenes.transition('dead', 'ashen-wilds');
+		window.setTimeout(() => {
+			if (this.state.scene.kind === 'dead') this.overlay.showWorldDeathScreen();
+		}, 800);
 	}
 
 	private announce(message: string, duration = 2): void {
@@ -254,7 +271,7 @@ export class Game {
 
 		if ((this.state.scene.kind === 'dead' || this.state.scene.kind === 'victory') && this.state.encounterOriginAreaId === 'ashen-wilds') {
 			const wasDead = this.state.scene.kind === 'dead';
-			if (wasDead) reviveAtCheckpoint(this.state);
+			if (wasDead) restAtCheckpoint(this.state, 'ashen-wilds-grace');
 			const spawnId = wasDead ? 'grace' : 'aeron-return';
 			this.state.encounterOriginAreaId = null;
 			void this.transitionToWorld(spawnId);
