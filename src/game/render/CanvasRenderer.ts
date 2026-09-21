@@ -1,5 +1,7 @@
 import { WORLD_CENTER_X, WORLD_CENTER_Y, WORLD_HEIGHT, WORLD_WIDTH } from '../constants.ts';
 import type { GameMode, GameState, Viewport } from '../types.ts';
+import { getAreaDefinition } from '../content/areas.ts';
+import { getArtTheme } from './artThemes.ts';
 import {
 	drawArena,
 	drawAtmosphericDust,
@@ -56,7 +58,8 @@ export class CanvasRenderer {
 		const shakeOffset = state.shake;
 
 		ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-		ctx.fillStyle = state.fightId === 'vael' ? '#070d12' : '#0a100f';
+		const artTheme = getArtTheme(getAreaDefinition(state.currentAreaId).artTheme);
+		ctx.fillStyle = artTheme.background;
 		ctx.fillRect(0, 0, w, h);
 
 		ctx.save();
@@ -66,7 +69,7 @@ export class CanvasRenderer {
 		);
 		ctx.scale(scale, scale);
 
-		drawArena(ctx, state.time, state.fightId);
+		drawArena(ctx, state.time, state.currentAreaId);
 		drawBossTelegraph(ctx, state.boss, mode, state.time, state.fightId);
 		drawHazards(ctx, state.hazards, state.fightId);
 
@@ -85,7 +88,7 @@ export class CanvasRenderer {
 
 		drawProjectiles(ctx, state.shots, state.time);
 		drawParticles(ctx, state.particles);
-		drawAtmosphericDust(ctx, state.time, state.fightId);
+		drawAtmosphericDust(ctx, state.time, state.currentAreaId);
 
 		ctx.restore();
 
