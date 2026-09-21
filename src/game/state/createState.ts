@@ -1,7 +1,7 @@
 import { PLAYER_START } from '../content/playerDefaults.ts';
-import { AERON } from '../content/aeron.ts';
+import { getFightDefinition } from '../content/fights.ts';
 import { initializeSpellLoadout, replenishSpellsAtRest } from './spellState.ts';
-import type { BossState, GameState, InputState, PlayerState } from '../types.ts';
+import type { BossState, FightId, GameState, InputState, PlayerState } from '../types.ts';
 
 export function createPlayerState(): PlayerState {
 	return {
@@ -15,16 +15,17 @@ export function createPlayerState(): PlayerState {
 	};
 }
 
-export function createBossState(): BossState {
+export function createBossState(fightId: FightId): BossState {
+	const fight = getFightDefinition(fightId);
 	return {
-		x: AERON.spawn.x,
-		y: AERON.spawn.y,
-		hp: AERON.maxHp,
-		baseMax: AERON.maxHp,
-		max: AERON.maxHp,
+		x: fight.spawn.x,
+		y: fight.spawn.y,
+		hp: fight.maxHp,
+		baseMax: fight.maxHp,
+		max: fight.maxHp,
 		angle: Math.PI / 2,
 		state: 'idle',
-		timer: AERON.idleTimer,
+		timer: fight.idleTimer,
 		move: 0,
 		flash: 0,
 		combo: 0,
@@ -37,10 +38,11 @@ export function createBossState(): BossState {
 export function createInitialGameState(): GameState {
 	const state: GameState = {
 		mode: 'title',
+		fightId: 'aeron',
 		attempts: 0,
 		time: 0,
 		player: createPlayerState(),
-		boss: createBossState(),
+		boss: createBossState('aeron'),
 		shots: [],
 		particles: [],
 		hazards: [],
@@ -67,7 +69,7 @@ export function createInitialInputState(): InputState {
 
 export function resetCombatState(state: GameState): void {
 	state.player = createPlayerState();
-	state.boss = createBossState();
+	state.boss = createBossState(state.fightId);
 	state.shots = [];
 	state.particles = [];
 	state.hazards = [];
