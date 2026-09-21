@@ -1,4 +1,5 @@
 import { getFightDefinition } from '../content/fights.ts';
+import { getAreaDefinition } from '../content/areas.ts';
 import { PLAYER_TUNING } from '../content/playerDefaults.ts';
 import {
 	canCastEquippedSpell,
@@ -48,6 +49,7 @@ export class DomHud {
 	sync(state: GameState): void {
 		const { player, boss } = state;
 		const fight = getFightDefinition(state.fightId);
+		const area = getAreaDefinition(state.currentAreaId);
 		const spell = getEquippedSpellDefinition(state);
 		const spellState = getEquippedSpellState(state);
 
@@ -56,8 +58,8 @@ export class DomHud {
 		// Always scale against baseMax so temporary max-HP reduction never looks like a heal.
 		this.bossHpEl.style.width = `${(boss.hp / boss.baseMax) * 100}%`;
 		this.bossNameEl.textContent = fight.displayName;
-		this.locationNameEl.textContent = fight.locationName;
-		this.locationSubtitleEl.textContent = fight.locationSubtitle;
+		this.locationNameEl.textContent = area.displayName;
+		this.locationSubtitleEl.textContent = area.subtitle;
 		this.phaseEl.textContent = state.phase2 ? fight.phases.phase2.label : fight.phases.phase1.label;
 
 		this.slotSpellNameEl.textContent = spell.displayName;
