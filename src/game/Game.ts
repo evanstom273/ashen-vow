@@ -265,7 +265,7 @@ export class Game {
 		updateSpellCooldowns(this.state, dt);
 
 		const movement = this.input.getMovementInput();
-		updatePlayerMovement(this.state, movement, dt);
+		updatePlayerMovement(this.state, movement, dt, 0.45);
 		constrainToArea(this.state.player, 'ashen-wilds');
 		resolveOverworldCollisions(this.state.player);
 
