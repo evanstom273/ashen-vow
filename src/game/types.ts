@@ -123,6 +123,7 @@ export interface WorldEnemyState {
 	lastKnownY: number;
 	hitFlash: number;
 	deathProgress: number;
+	runeGranted: boolean;
 }
 
 export interface WorldEnemyProjectile {
@@ -133,6 +134,7 @@ export interface WorldEnemyProjectile {
 	t: number;
 	damage: number;
 	kind: 'arrow' | 'magic';
+	spellId?: SpellId;
 	sourceId: string;
 }
 
