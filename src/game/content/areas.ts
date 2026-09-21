@@ -1,6 +1,27 @@
 import type { AreaDefinition, AreaId, FightId } from '../types.ts';
+import { OVERWORLD_SIZE, GRACE_POSITION, AERON_GATE_POSITION } from '../world/overworldContent.ts';
 
 export const AREAS: Record<AreaId, AreaDefinition> = {
+	'ashen-wilds': {
+		id: 'ashen-wilds',
+		kind: 'overworld',
+		displayName: 'THE ASHEN WILDS',
+		subtitle: 'An old road beneath a dark canopy',
+		bounds: { kind: 'rect', minX: 20, maxX: OVERWORLD_SIZE - 20, minY: 20, maxY: OVERWORLD_SIZE - 20 },
+		spawns: [
+			{ id: 'grace', position: GRACE_POSITION, facing: 0 },
+			{ id: 'aeron-return', position: { x: AERON_GATE_POSITION.x - 150, y: AERON_GATE_POSITION.y }, facing: Math.PI },
+		],
+		exits: [
+			{
+				id: 'aeron-gate',
+				position: AERON_GATE_POSITION,
+				targetAreaId: 'aeron-arena',
+				targetSpawnId: 'entry',
+			},
+		],
+		artTheme: 'wilds',
+	},
 	'aeron-arena': {
 		id: 'aeron-arena',
 		kind: 'boss',
@@ -40,4 +61,9 @@ export function getAreaForFight(fightId: FightId): AreaDefinition {
 
 export function getFightForArea(areaId: AreaId): FightId | null {
 	return AREAS[areaId].fightId ?? null;
+}
+
+export function getAreaSpawn(areaId: AreaId, spawnId: string) {
+	const area = getAreaDefinition(areaId);
+	return area.spawns.find((spawn) => spawn.id === spawnId) ?? area.spawns[0];
 }
