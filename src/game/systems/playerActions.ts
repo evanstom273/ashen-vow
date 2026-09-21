@@ -122,6 +122,7 @@ export function updateSorceryCharge(state: GameState, dt: number): void {
 export function updatePlayerMovement(state: GameState, movement: StickInput, dt: number, speedScale = 1): void {
 	const { player } = state;
 	const length = Math.hypot(movement.x, movement.y);
+	player.moving = player.roll > 0 || length > 0.08;
 	const spell = getEquippedSpellDefinition(state);
 
 	if (player.roll > 0) {
