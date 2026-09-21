@@ -6,8 +6,8 @@ export const SCENE_TRANSITIONS = {
 	combat: ['pause', 'dead', 'victory', 'transition', 'title'],
 	pause: ['combat', 'world', 'title'],
 	transition: ['world', 'combat', 'title'],
-	dead: ['combat', 'world', 'title'],
-	victory: ['combat', 'world', 'title'],
+	dead: ['combat', 'world', 'transition', 'title'],
+	victory: ['combat', 'world', 'transition', 'title'],
 } as const satisfies Record<SceneKind, readonly SceneKind[]>;
 
 export function canTransitionScene(from: SceneKind, to: SceneKind): boolean {
