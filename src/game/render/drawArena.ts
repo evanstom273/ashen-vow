@@ -171,15 +171,18 @@ export function drawBossTelegraph(ctx: CanvasRenderingContext2D, boss: BossState
 			}
 		} else if (boss.move === 1) {
 			drawCircle(ctx, 500, 375, 46, '#7daab222', '#a8d7dbaa', 2);
+			const base = Math.atan2(boss.ty - 375, boss.tx - 500);
 			for (let i = 0; i < 2; i++) {
-				const a = boss.angle + i * Math.PI;
+				const a = base + i * Math.PI;
 				drawLine(ctx, 500, 375, 500 + Math.cos(a) * 430, 375 + Math.sin(a) * 430, '#9fcbd399', 8);
 			}
 		} else {
-			drawCircle(ctx, boss.x, boss.y, 58, '#7daab222', '#a8d7dbaa', 2);
+			const aim = Math.atan2(boss.y - boss.ty, boss.x - boss.tx);
+			drawCircle(ctx, boss.tx, boss.ty, 58, '#7daab222', '#a8d7dbaa', 2);
+			drawCircle(ctx, boss.tx, boss.ty, 18 + Math.sin(time * 9) * 3, null, '#d0eeeecc', 2);
 			for (let i = -1; i <= 1; i++) {
-				const a = boss.angle + i * 0.34;
-				drawLine(ctx, boss.x, boss.y, boss.x + Math.cos(a) * 760, boss.y + Math.sin(a) * 760, '#9fcbd377', 4);
+				const a = aim + Math.PI + i * 0.34;
+				drawLine(ctx, boss.tx, boss.ty, boss.tx + Math.cos(a) * 220, boss.ty + Math.sin(a) * 220, '#9fcbd355', 3);
 			}
 		}
 		ctx.globalAlpha = 1;
