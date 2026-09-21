@@ -24,6 +24,7 @@ import {
 } from './systems/playerActions.ts';
 import { updateBossEffects } from './systems/effectSystem.ts';
 import { updateProjectiles } from './systems/projectiles.ts';
+import { updateWorldEnemies } from './systems/worldEnemies.ts';
 import { createInitialGameState, createInitialInputState, resetCombatState } from './state/createState.ts';
 import { updateSpellCooldowns } from './state/spellState.ts';
 import { markBossDefeated, respawnBoss } from './state/worldState.ts';
@@ -534,7 +535,12 @@ export class Game {
 		this.hud.tickNotice(this.state, dt);
 		updatePlayerRegen(this.state, dt);
 		updatePlayerHealing(this.combatContext, dt);
+		updateSorceryCharge(this.state, dt);
 		updateSpellCooldowns(this.state, dt);
+		if (!this.graceMenuOpen) {
+			updateWorldEnemies(this.combatContext, dt);
+			updateProjectiles(this.combatContext, dt);
+		}
 
 		const shifting = this.updateTransformation(dt);
 		const movement = this.graceMenuOpen || shifting ? { x: 0, y: 0 } : this.input.getMovementInput();
