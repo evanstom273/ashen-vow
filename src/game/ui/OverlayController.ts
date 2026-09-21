@@ -1,5 +1,9 @@
 import { getFightDefinition } from '../content/fights.ts';
-import type { FightId } from '../types.ts';
+import type { FightId, TravelFormId } from '../types.ts';
+
+function wait(ms: number): Promise<void> {
+	return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
 
 function $(id: string): HTMLElement {
 	const element = document.getElementById(id);
@@ -15,6 +19,62 @@ export class OverlayController {
 	private readonly secondFightEl = $('secondFight') as HTMLButtonElement;
 	private readonly menuEl = $('menu') as HTMLButtonElement;
 	private readonly tipEl = $('tip');
+	private readonly bossDialogueEl = $('bossDialogue');
+	private readonly bossDialogueNameEl = $('bossDialogueName');
+	private readonly bossDialogueTextEl = $('bossDialogueText');
+	private readonly graceMenuEl = $('graceMenu');
+	private readonly transitionCurtainEl = $('transitionCurtain');
+	private readonly loadingCardEl = $('loadingCard');
+	private readonly loadingAreaEl = $('loadingArea');
+
+
+	showBossIntro(fightId: FightId): void {
+		const fight = getFightDefinition(fightId);
+		this.bossDialogueNameEl.textContent = fight.displayName;
+		this.bossDialogueTextEl.textContent = fight.introDialogue;
+		this.bossDialogueEl.hidden = false;
+		this.bossDialogueEl.classList.add('is-visible');
+		document.body.classList.add('boss-intro');
+	}
+
+	hideBossIntro(): void {
+		this.bossDialogueEl.hidden = true;
+		this.bossDialogueEl.classList.remove('is-visible');
+		document.body.classList.remove('boss-intro');
+	}
+
+	showGraceMenu(selectedForm: TravelFormId): void {
+		this.graceMenuEl.querySelectorAll<HTMLButtonElement>('[data-form]').forEach((button) => {
+			button.classList.toggle('is-selected', button.dataset.form === selectedForm);
+		});
+		this.graceMenuEl.hidden = false;
+	}
+
+	hideGraceMenu(): void {
+		this.graceMenuEl.hidden = true;
+	}
+
+	async closeIris(x: number, y: number, areaName: string): Promise<void> {
+		this.transitionCurtainEl.style.setProperty('--iris-x', `${x}px`);
+		this.transitionCurtainEl.style.setProperty('--iris-y', `${y}px`);
+		this.loadingAreaEl.textContent = areaName;
+		this.transitionCurtainEl.classList.add('is-active');
+		this.loadingCardEl.hidden = true;
+		void this.transitionCurtainEl.getBoundingClientRect();
+		this.transitionCurtainEl.classList.add('is-closed');
+		await wait(570);
+		this.loadingCardEl.hidden = false;
+	}
+
+	async openIris(x: number, y: number): Promise<void> {
+		this.transitionCurtainEl.style.setProperty('--iris-x', `${x}px`);
+		this.transitionCurtainEl.style.setProperty('--iris-y', `${y}px`);
+		await wait(240);
+		this.loadingCardEl.hidden = true;
+		this.transitionCurtainEl.classList.remove('is-closed');
+		await wait(570);
+		this.transitionCurtainEl.classList.remove('is-active');
+	}
 
 	setGameplayScene(scene: 'world' | 'combat' | null): void {
 		const playing = scene !== null;

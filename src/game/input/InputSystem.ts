@@ -9,7 +9,7 @@ const GAMEPAD_ACTION_MAP: Record<string, PlayerAction> = {
 	'0': 'interact',
 	'4': 'cycleSpell',
 	'1': 'dodge',
-	'2': 'useConsumable',
+	'2': 'activateUtility',
 	'7': 'castStart',
 	'9': 'pause',
 };
@@ -140,7 +140,8 @@ export class InputSystem {
 		if (key === ' ') return 'dodge';
 		if (key === 'q' || key === '1') return 'cycleSpell';
 		if (key === 'k') return 'castStart';
-		if (key === 'e') return 'useConsumable';
+		if (key === 'e') return 'activateUtility';
+		if (key === 'c') return 'cycleUtility';
 		return null;
 	}
 

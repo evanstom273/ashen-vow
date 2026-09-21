@@ -6,6 +6,8 @@ export interface BossFightDefinition {
 	locationName: string;
 	locationSubtitle: string;
 	introAnnouncement: string;
+	introDialogue: string;
+	allowTravelForm: boolean;
 	maxHp: number;
 	spawn: { x: number; y: number };
 	idleTimer: number;
@@ -63,6 +65,8 @@ const AERON_FIGHT: BossFightDefinition = {
 	locationName: 'THE SUNKEN SANCTUM',
 	locationSubtitle: 'A duel at the end of an age',
 	introAnnouncement: 'THE LAST WATCH',
+	introDialogue: 'You crossed a dead kingdom for this. Come, then — let the crown remember you.',
+	allowTravelForm: false,
 	maxHp: 1200,
 	spawn: { x: 500, y: 260 },
 	idleTimer: 2,
@@ -120,6 +124,8 @@ const VAEL_FIGHT: BossFightDefinition = {
 	locationName: 'THE SHATTERED ORRERY',
 	locationSubtitle: 'Where dead stars still turn',
 	introAnnouncement: 'THE ORRERY WAKES',
+	introDialogue: 'I have watched your path in broken stars. It ends beneath this sky.',
+	allowTravelForm: false,
 	maxHp: 980,
 	spawn: { x: 500, y: 245 },
 	idleTimer: 1.5,

@@ -3,6 +3,7 @@ import { AudioManager } from './audio/AudioManager.ts';
 import { getAreaForFight, getAreaSpawn } from './content/areas.ts';
 import { getFightDefinition } from './content/fights.ts';
 import { PLAYER_TUNING } from './content/playerDefaults.ts';
+import { getTravelFormDefinition } from './content/travelForms.ts';
 import { decayShake, spawnBurst, updateParticles } from './effects/particles.ts';
 import { GameEventBus } from './events/GameEventBus.ts';
 import { SceneController } from './flow/SceneController.ts';
@@ -32,7 +33,11 @@ import {
 	isNearGrace,
 	resolveOverworldCollisions,
 } from './world/overworldContent.ts';
-import type { AreaId, FightId, GameState, InputState, PlayerAction } from './types.ts';
+import type { AreaId, FightId, GameState, InputState, PlayerAction, TravelFormId } from './types.ts';
+
+function wait(ms: number): Promise<void> {
+	return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
 
 export class Game {
 	private readonly state: GameState = createInitialGameState();
@@ -46,6 +51,9 @@ export class Game {
 	private readonly input: InputSystem;
 	private lastFrameTime = 0;
 	private sprinting = false;
+	private transitioning = false;
+	private bossIntroActive = false;
+	private graceMenuOpen = false;
 
 	constructor(canvas: HTMLCanvasElement) {
 		this.renderer = new CanvasRenderer(canvas);
@@ -63,18 +71,28 @@ export class Game {
 		const secondFightButton = document.getElementById('secondFight');
 		const menuButton = document.getElementById('menu');
 		const pauseButton = document.getElementById('pause');
+		const closeGraceMenu = document.getElementById('closeGraceMenu');
 
 		beginButton?.addEventListener('click', () => {
 			if (this.state.scene.kind === 'title') this.enterWorld('grace');
 			else this.start();
 		});
-		secondFightButton?.addEventListener('click', () => this.startFight('vael', null, false));
+		secondFightButton?.addEventListener('click', () => void this.transitionToFight('vael', null, false));
 		menuButton?.addEventListener('click', () => this.returnToMenu());
 		pauseButton?.addEventListener('click', () => this.togglePause());
+		closeGraceMenu?.addEventListener('click', () => this.closeGraceMenu());
+		document.querySelectorAll<HTMLButtonElement>('[data-form]').forEach((button) => {
+			button.addEventListener('click', () => {
+				const form = button.dataset.form as TravelFormId | undefined;
+				if (form) this.selectTravelForm(form);
+			});
+		});
 		this.overlay.showMainMenu();
 
 		addEventListener('blur', () => {
-			if (this.state.scene.kind === 'combat' || this.state.scene.kind === 'world') this.togglePause();
+			if ((this.state.scene.kind === 'combat' || this.state.scene.kind === 'world') && !this.transitioning && !this.graceMenuOpen) {
+				this.togglePause();
+			}
 		});
 
 		requestAnimationFrame((now) => this.frame(now));
@@ -104,11 +122,19 @@ export class Game {
 		this.state.player.roll = 0;
 		this.state.player.heal = 0;
 		this.state.player.inv = 0;
+		this.state.player.moving = false;
+	}
+
+	private resetTravelMotion(): void {
+		this.sprinting = false;
+		this.state.player.sprinting = false;
+		this.state.player.moving = false;
 	}
 
 	private enterWorld(spawnId: string): void {
-		this.sprinting = false;
-		this.state.player.sprinting = false;
+		this.resetTravelMotion();
+		this.bossIntroActive = false;
+		this.overlay.hideBossIntro();
 		if (this.state.player.hp <= 0) reviveAtCheckpoint(this.state);
 		this.state.currentAreaId = 'ashen-wilds';
 		this.positionPlayer('ashen-wilds', spawnId);
@@ -123,42 +149,94 @@ export class Game {
 		this.lastFrameTime = performance.now();
 	}
 
-	private startFight(fightId: FightId, originAreaId: AreaId | null, preserveResources: boolean): void {
+	private prepareCombat(fightId: FightId, originAreaId: AreaId | null, preserveResources: boolean): void {
+		this.resetTravelMotion();
+		this.audio.init();
 		this.state.fightId = fightId;
 		this.state.encounterOriginAreaId = originAreaId;
 		this.state.currentAreaId = getAreaForFight(fightId).id;
 		if (!originAreaId) respawnBoss(this.state.world, fightId);
-		this.beginCombatAttempt(preserveResources);
-	}
 
-	private beginCombatAttempt(preserveResources: boolean): void {
-		this.sprinting = false;
-		this.audio.init();
+		const selectedForm = this.state.player.selectedTravelForm;
 		resetCombatState(this.state, preserveResources);
+		this.state.player.selectedTravelForm = selectedForm;
+		this.state.player.transformed = false;
+		this.state.player.transformTarget = false;
+		this.state.player.transformProgress = 0;
 		this.state.attempts += 1;
 		this.scenes.enterCombat(this.state.currentAreaId);
 		this.overlay.setGameplayScene('combat');
 		this.hud.setInteractionPrompt(null);
 		this.hud.setContextAction('roll');
 		this.hud.sync(this.state);
-		this.announce(getFightDefinition(this.state.fightId).introAnnouncement, 2.5);
+		this.lastFrameTime = performance.now();
+	}
+
+	private async transitionToFight(fightId: FightId, originAreaId: AreaId | null, preserveResources: boolean): Promise<void> {
+		if (this.transitioning) return;
+		this.transitioning = true;
+		this.closeGraceMenu();
+		this.input.clearKeys();
+		this.resetTravelMotion();
+		this.state.charging = false;
+
+		const viewport = this.renderer.getViewport();
+		const from = this.state.scene.kind === 'title'
+			? { x: viewport.w / 2, y: viewport.h / 2 }
+			: this.renderer.getActorScreenPosition(this.state);
+		const area = getAreaForFight(fightId);
+		await this.overlay.closeIris(from.x, from.y, area.displayName);
+
+		this.prepareCombat(fightId, originAreaId, preserveResources);
+		await wait(120);
+		const to = this.renderer.getActorScreenPosition(this.state);
+		await this.overlay.openIris(to.x, to.y);
+
+		this.bossIntroActive = true;
+		this.overlay.showBossIntro(fightId);
+		await wait(2800);
+		if (this.state.scene.kind === 'combat') {
+			this.overlay.hideBossIntro();
+			this.bossIntroActive = false;
+			this.announce(getFightDefinition(fightId).introAnnouncement, 2.2);
+		}
+		this.transitioning = false;
+		this.lastFrameTime = performance.now();
+	}
+
+	private async transitionToWorld(spawnId: string): Promise<void> {
+		if (this.transitioning) return;
+		this.transitioning = true;
+		this.input.clearKeys();
+		const viewport = this.renderer.getViewport();
+		const from = (this.state.scene.kind === 'dead' || this.state.scene.kind === 'victory')
+			? { x: viewport.w / 2, y: viewport.h / 2 }
+			: this.renderer.getActorScreenPosition(this.state);
+		await this.overlay.closeIris(from.x, from.y, 'THE ASHEN WILDS');
+		this.enterWorld(spawnId);
+		await wait(100);
+		const to = this.renderer.getActorScreenPosition(this.state);
+		await this.overlay.openIris(to.x, to.y);
+		this.transitioning = false;
 		this.lastFrameTime = performance.now();
 	}
 
 	private returnToMenu(): void {
-		this.sprinting = false;
-		this.state.player.sprinting = false;
-		this.state.player.moving = false;
+		this.resetTravelMotion();
 		this.state.charging = false;
 		this.state.charge = 0;
 		this.state.encounterOriginAreaId = null;
 		this.input.clearKeys();
 		this.hud.setInteractionPrompt(null);
+		this.overlay.hideBossIntro();
+		this.overlay.hideGraceMenu();
+		this.graceMenuOpen = false;
 		this.scenes.returnToTitle();
 		this.overlay.showMainMenu();
 	}
 
 	start(): void {
+		if (this.transitioning) return;
 		if (this.state.scene.kind === 'pause') {
 			const resumeScene = this.state.scene.previousKind === 'world' ? 'world' : 'combat';
 			this.scenes.transition(resumeScene, this.state.currentAreaId);
@@ -173,14 +251,15 @@ export class Game {
 			if (wasDead) reviveAtCheckpoint(this.state);
 			const spawnId = wasDead ? 'grace' : 'aeron-return';
 			this.state.encounterOriginAreaId = null;
-			this.enterWorld(spawnId);
+			void this.transitionToWorld(spawnId);
 			return;
 		}
 
-		this.startFight(this.state.fightId, null, false);
+		void this.transitionToFight(this.state.fightId, null, false);
 	}
 
 	private togglePause(): void {
+		if (this.transitioning || this.bossIntroActive || this.graceMenuOpen) return;
 		if (!['combat', 'world', 'pause'].includes(this.state.scene.kind)) return;
 
 		if (this.state.scene.kind === 'pause') {
@@ -189,9 +268,7 @@ export class Game {
 		}
 
 		const inWorld = this.state.scene.kind === 'world';
-		this.sprinting = false;
-		this.state.player.sprinting = false;
-		this.state.player.moving = false;
+		this.resetTravelMotion();
 		this.scenes.transition('pause', this.state.currentAreaId);
 		this.input.clearKeys();
 		this.state.charging = false;
@@ -201,10 +278,10 @@ export class Game {
 	}
 
 	private end(win: boolean): void {
-		this.sprinting = false;
-		this.state.player.sprinting = false;
-		this.state.player.moving = false;
+		this.resetTravelMotion();
 		this.state.charging = false;
+		this.overlay.hideBossIntro();
+		this.bossIntroActive = false;
 		const returnToWorld = this.state.encounterOriginAreaId === 'ashen-wilds';
 		if (win) {
 			markBossDefeated(this.state.world, this.state.fightId);
@@ -227,13 +304,34 @@ export class Game {
 	}
 
 	private restAtGrace(): void {
+		this.resetTravelMotion();
+		this.state.player.transformTarget = false;
+		this.state.player.transformed = false;
+		this.state.player.transformProgress = 0;
 		restAtCheckpoint(this.state, 'ashen-wilds-grace');
 		this.events.emit({ type: 'checkpointRested', checkpointId: 'ashen-wilds-grace' });
 		spawnBurst(this.state, this.state.player.x, this.state.player.y, '#e9cb75', 38, 90);
 		this.audio.init();
 		this.audio.play(520, 0.55, 'sine', 0.035);
 		this.announce('GRACE RESTORED · BOSSES RETURN', 2.4);
+		this.graceMenuOpen = true;
+		this.input.clearKeys();
+		this.overlay.showGraceMenu(this.state.player.selectedTravelForm);
 		this.hud.sync(this.state);
+	}
+
+	private closeGraceMenu(): void {
+		this.graceMenuOpen = false;
+		this.overlay.hideGraceMenu();
+		this.lastFrameTime = performance.now();
+	}
+
+	private selectTravelForm(form: TravelFormId): void {
+		this.state.player.selectedTravelForm = form;
+		this.overlay.showGraceMenu(form);
+		this.hud.sync(this.state);
+		this.audio.init();
+		this.audio.play(360, 0.12, 'sine', 0.025);
 	}
 
 	private updateWorldInteractionPrompt(): void {
@@ -264,14 +362,13 @@ export class Game {
 	private performWorldInteraction(): boolean {
 		if (this.state.scene.kind !== 'world') return false;
 		if (isNearGrace(this.state.player)) {
-			this.sprinting = false;
 			this.restAtGrace();
 			return true;
 		}
 		if (isNearAeronGate(this.state.player)) {
-			this.sprinting = false;
+			this.resetTravelMotion();
 			if (this.state.world.bosses.aeron.alive) {
-				this.startFight('aeron', 'ashen-wilds', true);
+				void this.transitionToFight('aeron', 'ashen-wilds', true);
 			} else {
 				this.announce('THE HOLLOW KING IS SLAIN · REST AT GRACE TO RESTORE', 2.2);
 			}
@@ -280,7 +377,59 @@ export class Game {
 		return false;
 	}
 
+	private cycleUtility(): void {
+		this.state.utilityItem = this.state.utilityItem === 'flask' ? 'transform' : 'flask';
+		this.audio.init();
+		this.audio.play(410, 0.07, 'sine', 0.02);
+		this.hud.sync(this.state);
+	}
+
+	private canUseTravelForm(): boolean {
+		if (this.state.scene.kind === 'world') return true;
+		if (this.state.scene.kind === 'combat') return getFightDefinition(this.state.fightId).allowTravelForm;
+		return false;
+	}
+
+	private toggleTravelForm(): void {
+		const { player } = this.state;
+		if (!this.canUseTravelForm()) {
+			this.announce('THIS FORM CANNOT TAKE ROOT HERE', 1.8);
+			return;
+		}
+		if (player.roll > 0 || player.heal > 0 || this.state.charging || (player.transformProgress > 0 && player.transformProgress < 1)) return;
+		this.resetTravelMotion();
+		player.transformTarget = !player.transformed;
+		const form = getTravelFormDefinition(player.selectedTravelForm);
+		spawnBurst(this.state, player.x, player.y, form.accent, 42, 125);
+		this.audio.init();
+		this.audio.play(player.transformTarget ? 230 : 310, 0.42, 'triangle', 0.035);
+	}
+
+	private activateUtility(): void {
+		if (this.state.utilityItem === 'transform') {
+			this.toggleTravelForm();
+			return;
+		}
+		handlePlayerAction(
+			{
+				...this.combatContext,
+				onPause: () => this.togglePause(),
+				getMovementInput: () => this.input.getMovementInput(),
+			},
+			'useConsumable',
+		);
+	}
+
 	private onAction(action: PlayerAction): void {
+		if (this.transitioning || this.bossIntroActive || this.graceMenuOpen) return;
+		if (action === 'cycleUtility') {
+			this.cycleUtility();
+			return;
+		}
+		if (action === 'activateUtility') {
+			this.activateUtility();
+			return;
+		}
 		if (action === 'sprintStart') {
 			if (this.state.scene.kind === 'world' && (isNearGrace(this.state.player) || isNearAeronGate(this.state.player))) return;
 			if (this.state.scene.kind === 'world' || this.state.scene.kind === 'combat') {
@@ -290,8 +439,7 @@ export class Game {
 			return;
 		}
 		if (action === 'sprintEnd') {
-			this.sprinting = false;
-			this.state.player.sprinting = false;
+			this.resetTravelMotion();
 			return;
 		}
 		if (action === 'interact') {
@@ -314,7 +462,46 @@ export class Game {
 	}
 
 	private onCastRelease(): void {
+		if (this.transitioning || this.bossIntroActive || this.graceMenuOpen) return;
 		releaseCast(this.combatContext);
+	}
+
+	private updateTransformation(dt: number): boolean {
+		const { player } = this.state;
+		const target = player.transformTarget ? 1 : 0;
+		if (Math.abs(player.transformProgress - target) < 0.001) {
+			player.transformProgress = target;
+			player.transformed = target === 1;
+			return false;
+		}
+		const direction = target > player.transformProgress ? 1 : -1;
+		player.transformProgress = Math.max(0, Math.min(1, player.transformProgress + direction * dt / 0.48));
+		player.transformed = player.transformProgress >= 0.98 && player.transformTarget;
+		const form = getTravelFormDefinition(player.selectedTravelForm);
+		if (Math.random() < 0.45) spawnBurst(this.state, player.x, player.y, form.accentSoft, 1, 40);
+		return true;
+	}
+
+	private movementScale(sprinting: boolean): number {
+		const { player } = this.state;
+		if (!player.transformed) {
+			const speed = sprinting ? PLAYER_TUNING.movement.sprintSpeed : PLAYER_TUNING.movement.normalSpeed;
+			return speed / PLAYER_TUNING.movement.normalSpeed;
+		}
+		const form = getTravelFormDefinition(player.selectedTravelForm);
+		const speed = sprinting ? form.sprintSpeed : form.walkSpeed;
+		return speed / PLAYER_TUNING.movement.normalSpeed;
+	}
+
+	private applySprintDrain(dt: number, amount: number, moving: boolean): boolean {
+		const sprinting = this.sprinting && moving && this.state.player.sp > 0;
+		if (sprinting) {
+			this.state.player.sp = Math.max(0, this.state.player.sp - amount * dt);
+			this.state.player.regen = Math.max(this.state.player.regen, 0.3);
+			if (this.state.player.sp <= 0) this.resetTravelMotion();
+		}
+		this.state.player.sprinting = sprinting;
+		return sprinting;
 	}
 
 	private updateWorld(dt: number): void {
@@ -323,20 +510,11 @@ export class Game {
 		updatePlayerHealing(this.combatContext, dt);
 		updateSpellCooldowns(this.state, dt);
 
-		const movement = this.input.getMovementInput();
+		const shifting = this.updateTransformation(dt);
+		const movement = this.graceMenuOpen || shifting ? { x: 0, y: 0 } : this.input.getMovementInput();
 		const moving = Math.hypot(movement.x, movement.y) > 0.12;
-		const sprinting = this.sprinting && moving && this.state.player.sp > 0;
-		if (sprinting) {
-			this.state.player.sp = Math.max(0, this.state.player.sp - 12 * dt);
-			this.state.player.regen = Math.max(this.state.player.regen, 0.28);
-			if (this.state.player.sp <= 0) {
-				this.sprinting = false;
-				this.state.player.sprinting = false;
-			}
-		}
-		this.state.player.sprinting = sprinting;
-		const sprintScale = PLAYER_TUNING.movement.sprintSpeed / PLAYER_TUNING.movement.normalSpeed;
-		updatePlayerMovement(this.state, movement, dt, sprinting ? sprintScale : 1);
+		const sprinting = this.applySprintDrain(dt, 12, moving);
+		updatePlayerMovement(this.state, movement, dt, this.movementScale(sprinting));
 		constrainToArea(this.state.player, 'ashen-wilds');
 		resolveOverworldCollisions(this.state.player);
 
@@ -350,21 +528,19 @@ export class Game {
 		updatePlayerHealing(this.combatContext, dt);
 		updateSorceryCharge(this.state, dt);
 		updateSpellCooldowns(this.state, dt);
+		this.updateTransformation(dt);
+
+		if (this.bossIntroActive) {
+			this.state.player.moving = false;
+			this.state.boss.moving = false;
+			this.hud.sync(this.state);
+			return;
+		}
 
 		const movement = this.input.getMovementInput();
 		const moving = Math.hypot(movement.x, movement.y) > 0.12;
-		const sprinting = this.sprinting && moving && this.state.player.sp > 0;
-		if (sprinting) {
-			this.state.player.sp = Math.max(0, this.state.player.sp - 14 * dt);
-			this.state.player.regen = Math.max(this.state.player.regen, 0.3);
-			if (this.state.player.sp <= 0) {
-				this.sprinting = false;
-				this.state.player.sprinting = false;
-			}
-		}
-		this.state.player.sprinting = sprinting;
-		const sprintScale = PLAYER_TUNING.movement.sprintSpeed / PLAYER_TUNING.movement.normalSpeed;
-		updatePlayerMovement(this.state, movement, dt, sprinting ? sprintScale : 1);
+		const sprinting = this.applySprintDrain(dt, 14, moving);
+		updatePlayerMovement(this.state, movement, dt, this.movementScale(sprinting));
 		constrainToArea(this.state.player, this.state.currentAreaId);
 
 		updateBoss(
@@ -382,6 +558,10 @@ export class Game {
 
 	private update(dt: number): void {
 		this.input.pollGamepad();
+		if (this.state.hitStop > 0) {
+			this.state.hitStop = Math.max(0, this.state.hitStop - dt);
+			return;
+		}
 		this.state.time += dt;
 		updateParticles(this.state, dt);
 		decayShake(this.state, dt);

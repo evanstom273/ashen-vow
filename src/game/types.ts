@@ -5,6 +5,8 @@ export type GameMode = 'title' | 'play' | 'pause' | 'dead' | 'win';
 
 export type SceneKind = 'title' | 'world' | 'combat' | 'pause' | 'transition' | 'dead' | 'victory';
 export type FightId = 'aeron' | 'vael';
+export type TravelFormId = 'raven' | 'wolf' | 'feline';
+export type UtilityItemId = 'flask' | 'transform';
 export type AreaId = 'ashen-wilds' | 'aeron-arena' | 'vael-arena';
 export type AreaKind = 'overworld' | 'boss' | 'interior';
 
@@ -128,6 +130,11 @@ export interface PlayerState {
 	dy: number;
 	moving: boolean;
 	sprinting: boolean;
+	transformed: boolean;
+	selectedTravelForm: TravelFormId;
+	transformProgress: number;
+	transformTarget: boolean;
+	hitReact: number;
 }
 
 export interface ActiveEffect {
@@ -156,6 +163,7 @@ export interface BossState {
 	ty: number;
 	effects: ActiveEffect[];
 	moving: boolean;
+	hitReact: number;
 }
 
 export interface Shot {
@@ -254,6 +262,8 @@ export interface GameState {
 	shake: number;
 	noticeTime: number;
 	phase2: boolean;
+	utilityItem: UtilityItemId;
+	hitStop: number;
 }
 
 export interface StickInput {
@@ -268,6 +278,8 @@ export type PlayerAction =
 	| 'sprintStart'
 	| 'sprintEnd'
 	| 'cycleSpell'
+	| 'cycleUtility'
+	| 'activateUtility'
 	| 'useConsumable'
 	| 'castStart'
 	| 'castRelease'

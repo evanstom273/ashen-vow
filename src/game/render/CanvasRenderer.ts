@@ -2,7 +2,7 @@ import { WORLD_CENTER_X, WORLD_CENTER_Y, WORLD_HEIGHT, WORLD_WIDTH } from '../co
 import type { GameMode, GameState, Viewport } from '../types.ts';
 import { getAreaDefinition } from '../content/areas.ts';
 import { getArtTheme } from './artThemes.ts';
-import { renderOverworld } from '../world/overworldRenderer.ts';
+import { getWorldCamera, renderOverworld } from '../world/overworldRenderer.ts';
 import {
 	drawArena,
 	drawAtmosphericDust,
@@ -52,6 +52,20 @@ export class CanvasRenderer {
 	getViewport(): Viewport {
 		return this.viewport;
 	}
+	getActorScreenPosition(state: GameState): { x: number; y: number } {
+		const { scale, ox, oy } = this.viewport;
+		const area = getAreaDefinition(state.currentAreaId);
+		if (area.kind === 'overworld') {
+			const camera = getWorldCamera(state);
+			const worldScale = scale * 1.18;
+			return {
+				x: ox + 500 * scale + (state.player.x - camera.x) * worldScale,
+				y: oy + 375 * scale + (state.player.y - camera.y) * worldScale,
+			};
+		}
+		return { x: ox + state.player.x * scale, y: oy + state.player.y * scale };
+	}
+
 
 	render(state: GameState, mode: GameMode): void {
 		const { ctx, viewport } = this;
@@ -79,7 +93,7 @@ export class CanvasRenderer {
 		drawHazards(ctx, state.hazards, state.fightId);
 
 		if (state.player.y < state.boss.y) {
-			drawKnight(ctx, state.player, false, state.time, state.phase2, state.fightId);
+			drawKnight(ctx, state.player, false, state.time, state.phase2, state.fightId, state.charging);
 			drawKnight(ctx, state.boss, true, state.time, state.phase2, state.fightId);
 		} else {
 			drawKnight(ctx, state.boss, true, state.time, state.phase2, state.fightId);
