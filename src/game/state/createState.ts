@@ -75,11 +75,17 @@ export function createInitialInputState(): InputState {
 	};
 }
 
-export function resetCombatState(state: GameState): void {
+export function resetCombatState(state: GameState, preserveResources = false): void {
 	const area = getAreaForFight(state.fightId);
 	const spawn = area.spawns[0];
+	const previousPlayer = state.player;
 	state.currentAreaId = area.id;
 	state.player = createPlayerState();
+	if (preserveResources) {
+		state.player.hp = previousPlayer.hp;
+		state.player.sp = previousPlayer.sp;
+		state.player.flasks = previousPlayer.flasks;
+	}
 	if (spawn) {
 		state.player.x = spawn.position.x;
 		state.player.y = spawn.position.y;
@@ -94,5 +100,5 @@ export function resetCombatState(state: GameState): void {
 	state.charging = false;
 	state.noticeTime = 0;
 	state.shake = 0;
-	replenishSpellsAtRest(state);
+	if (!preserveResources) replenishSpellsAtRest(state);
 }
