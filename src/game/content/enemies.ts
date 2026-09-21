@@ -26,6 +26,14 @@ export const ENEMIES: Record<EnemyId, EnemyDefinition> = {
 		runeReward: 0,
 		controller: 'vael',
 	},
+	'fort-guard': {
+		id: 'fort-guard',
+		category: 'regular',
+		displayName: 'FORT GUARD',
+		maxHp: 180,
+		runeReward: 100,
+		controller: 'generic',
+	},
 };
 
 export function getEnemyDefinition(id: EnemyId): EnemyDefinition {
