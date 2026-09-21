@@ -77,6 +77,41 @@ export class SlotControls {
 			return;
 		}
 
+		if (action === 'activateUtility') {
+			let holdTimer: ReturnType<typeof setTimeout> | null = null;
+			let activated = false;
+			let activePointer: number | null = null;
+
+			const finish = (triggerTap: boolean): void => {
+				if (activePointer === null) return;
+				if (holdTimer) clearTimeout(holdTimer);
+				holdTimer = null;
+				const pointerId = activePointer;
+				activePointer = null;
+				if (button.hasPointerCapture(pointerId)) button.releasePointerCapture(pointerId);
+				button.classList.remove('is-pressed', 'is-held');
+				if (!activated && triggerTap) this.onAction('cycleUtility');
+				activated = false;
+			};
+
+			button.addEventListener('pointerdown', (event) => {
+				event.preventDefault();
+				activePointer = event.pointerId;
+				button.setPointerCapture(event.pointerId);
+				button.classList.add('is-pressed');
+				holdTimer = setTimeout(() => {
+					if (activePointer === null) return;
+					activated = true;
+					button.classList.add('is-held');
+					this.onAction('activateUtility');
+				}, 260);
+			});
+			button.addEventListener('pointerup', () => finish(true));
+			button.addEventListener('pointercancel', () => finish(false));
+			button.addEventListener('lostpointercapture', () => finish(false));
+			return;
+		}
+
 		if (action === 'castStart') {
 			button.addEventListener('pointerdown', (event) => {
 				event.preventDefault();
