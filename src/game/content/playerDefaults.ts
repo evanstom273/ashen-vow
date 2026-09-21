@@ -3,7 +3,7 @@ import type { PlayerState } from '../types.ts';
 export const PLAYER_MAX_HP = 100;
 export const PLAYER_MAX_SP = 100;
 
-export const PLAYER_START: Omit<PlayerState, 'roll' | 'inv' | 'cd' | 'heal' | 'swing' | 'regen'> = {
+export const PLAYER_START: Omit<PlayerState, 'roll' | 'inv' | 'cd' | 'heal' | 'swing' | 'regen' | 'moving' | 'sprinting'> = {
 	x: 500,
 	y: 550,
 	hp: PLAYER_MAX_HP,
