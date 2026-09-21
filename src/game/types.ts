@@ -261,6 +261,9 @@ export interface StickInput {
 /** Logical player actions — independent of physical input device. */
 export type PlayerAction =
 	| 'dodge'
+	| 'contextAction'
+	| 'sprintStart'
+	| 'sprintEnd'
 	| 'cycleSpell'
 	| 'useConsumable'
 	| 'castStart'
