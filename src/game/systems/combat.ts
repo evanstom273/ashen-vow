@@ -86,7 +86,7 @@ export function hitBoss(
 export function hurtPlayer(ctx: CombatContext, damage: number): void {
 	const { state, audio, onPlayerDeath } = ctx;
 	const { player } = state;
-	if (player.inv > 0 || state.mode !== 'play') return;
+	if (player.inv > 0 || state.scene.kind !== 'combat') return;
 
 	player.hp = Math.max(0, player.hp - damage);
 	player.inv = PLAYER_TUNING.invulnerabilityAfterHit;
