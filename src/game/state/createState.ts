@@ -71,6 +71,7 @@ export function createInitialGameState(): GameState {
 		noticeTime: 0,
 		phase2: false,
 		utilityItem: 'flask',
+		hitStop: 0,
 	};
 	initializeSpellLoadout(state);
 	return state;
@@ -114,5 +115,6 @@ export function resetCombatState(state: GameState, preserveResources = false): v
 	state.charging = false;
 	state.noticeTime = 0;
 	state.shake = 0;
+	state.hitStop = 0;
 	if (!preserveResources) replenishSpellsAtRest(state);
 }
