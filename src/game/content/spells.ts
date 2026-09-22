@@ -54,7 +54,7 @@ export const SPELLS: Record<SpellId, SpellDefinition> = {
 		damageType: 'arcane',
 		projectile: {
 			speed: 460,
-			lifetime: 2,
+			lifetime: 0.652,
 			hitRadius: 38,
 		},
 		charge: {
@@ -76,7 +76,7 @@ export const SPELLS: Record<SpellId, SpellDefinition> = {
 		damageType: 'arcane',
 		projectile: {
 			speed: 520,
-			lifetime: 1.6,
+			lifetime: 0.531,
 			hitRadius: 32,
 		},
 		charge: {
@@ -98,7 +98,7 @@ export const SPELLS: Record<SpellId, SpellDefinition> = {
 		damageType: 'ash',
 		projectile: {
 			speed: 400,
-			lifetime: 1.8,
+			lifetime: 0.6,
 			hitRadius: 34,
 		},
 		charge: {
@@ -120,7 +120,7 @@ export const SPELLS: Record<SpellId, SpellDefinition> = {
 		damageType: 'death',
 		projectile: {
 			speed: 380,
-			lifetime: 2.2,
+			lifetime: 0.758,
 			hitRadius: 40,
 		},
 		charge: {

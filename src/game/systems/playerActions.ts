@@ -74,7 +74,7 @@ export function releaseCast(ctx: CombatContext): void {
 	const spell = getEquippedSpellDefinition(state);
 	const powered = isSpellCharged(spell, state.charge);
 	consumeEquippedSpellCast(state);
-	const worldTarget = state.scene.kind === 'world' ? findNearestWorldEnemy(state, 720) : null;
+	const worldTarget = state.scene.kind === 'world' ? findNearestWorldEnemy(state, 360) : null;
 	const angle = state.scene.kind === 'combat'
 		? Math.atan2(state.boss.y - state.player.y, state.boss.x - state.player.x)
 		: worldTarget
