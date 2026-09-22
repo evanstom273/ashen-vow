@@ -70,6 +70,7 @@ export function createInitialGameState(): GameState {
 		worldEnemyProjectiles: [],
 		shots: [],
 		particles: [],
+		damageNumbers: [],
 		hazards: [],
 		equippedSpellId: 'ashen-bolt',
 		spells: {} as GameState['spells'],
@@ -120,6 +121,7 @@ export function resetCombatState(state: GameState, preserveResources = false): v
 	state.boss = createBossState(state.fightId);
 	state.shots = [];
 	state.particles = [];
+	state.damageNumbers = [];
 	state.hazards = [];
 	state.phase2 = false;
 	state.charge = 0;
