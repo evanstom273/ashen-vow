@@ -123,8 +123,8 @@ export class DomHud {
 		const spell = getEquippedSpellDefinition(state);
 		const spellState = getEquippedSpellState(state);
 
-		this.hpEl.style.width = `${player.hp}%`;
-		this.spEl.style.width = `${player.sp}%`;
+		this.hpEl.style.width = `${(player.hp / Math.max(1, player.maxHp)) * 100}%`;
+		this.spEl.style.width = `${(player.sp / Math.max(1, player.maxSp)) * 100}%`;
 		this.syncRunes(state.runes);
 		// Always scale against baseMax so temporary max-HP reduction never looks like a heal.
 		this.bossHpEl.style.width = `${(boss.hp / boss.baseMax) * 100}%`;
