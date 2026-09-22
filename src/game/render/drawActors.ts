@@ -1,6 +1,6 @@
 import { getSpellDefinition } from '../content/spells.ts';
 import type { SpellVisualProfile } from '../content/spellVisuals.ts';
-import type { BossState, FightId, PlayerState, Shot } from '../types.ts';
+import type { BossState, DamageNumber, FightId, PlayerState, Shot } from '../types.ts';
 import { drawSpellChargeRing, drawSpellProjectile } from './spellVisualRenderer.ts';
 import { drawCircle, drawLine } from './primitives.ts';
 import { drawTravelForm } from './travelFormRenderer.ts';
@@ -283,4 +283,26 @@ export function drawParticles(ctx: CanvasRenderingContext2D, particles: { x: num
 
 export function drawChargeRing(ctx: CanvasRenderingContext2D, x: number, y: number, charge: number, visual: SpellVisualProfile): void {
 	drawSpellChargeRing(ctx, x, y, charge, visual);
+}
+
+
+export function drawDamageNumbers(ctx: CanvasRenderingContext2D, damageNumbers: readonly DamageNumber[]): void {
+	for (const entry of damageNumbers) {
+		const progress = 1 - entry.t / entry.max;
+		ctx.save();
+		ctx.globalAlpha = Math.max(0, Math.min(1, entry.t / 0.28));
+		ctx.translate(entry.x, entry.y);
+		const scale = entry.heavy ? 1.18 : 1;
+		ctx.scale(scale, scale);
+		ctx.font = `${entry.heavy ? 18 : 15}px Georgia`;
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.lineWidth = 3;
+		ctx.strokeStyle = '#111814dd';
+		ctx.fillStyle = entry.heavy ? '#f0d79d' : '#e8e3d2';
+		ctx.strokeText(String(entry.amount), 0, -progress * 3);
+		ctx.fillText(String(entry.amount), 0, -progress * 3);
+		ctx.restore();
+	}
+	ctx.globalAlpha = 1;
 }
