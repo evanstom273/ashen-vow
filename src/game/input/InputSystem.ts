@@ -14,6 +14,9 @@ const GAMEPAD_ACTION_MAP: Record<string, PlayerAction> = {
 	'9': 'pause',
 };
 
+const MOVEMENT_KEYS = new Set(['w', 'a', 's', 'd', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+const RIGHT_MOUSE_HOLD_MS = 180;
+
 export class InputSystem {
 	private readonly input: InputState;
 	private readonly onAction: ActionHandler;
@@ -21,6 +24,10 @@ export class InputSystem {
 	private readonly getMode: () => GameMode;
 	private readonly onStartFromMenu: StartHandler;
 	private slotControls: SlotControls | null = null;
+	private rightMouseTimer: number | null = null;
+	private rightMouseDown = false;
+	private rightMouseSprinting = false;
+	private leftMouseDown = false;
 
 	constructor(
 		input: InputState,
@@ -39,36 +46,87 @@ export class InputSystem {
 	bindKeyboard(): void {
 		addEventListener('keydown', (event) => {
 			const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
-			if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
-				event.preventDefault();
+			if ([' ', ...MOVEMENT_KEYS].includes(key)) event.preventDefault();
+
+			if (MOVEMENT_KEYS.has(key)) {
+				this.input.keys[key] = true;
+				return;
 			}
 
+			if (event.repeat) return;
 			const action = this.mapKeyboardDown(key);
-			if (!action) return;
-
-			const actionKey = this.actionStorageKey(action);
-			if (!this.input.keys[actionKey]) {
-				this.onAction(action);
-			}
-			this.input.keys[actionKey] = true;
+			if (action) this.onAction(action);
 		});
 
 		addEventListener('keyup', (event) => {
 			const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
-			const action = this.mapKeyboardUp(key);
-			if (action) {
-				this.input.keys[this.actionStorageKey(action)] = false;
+			if (MOVEMENT_KEYS.has(key)) {
+				this.input.keys[key] = false;
+				return;
 			}
-			if (key === 'k') {
-				this.onCastRelease();
-			}
+			if (key === 'k') this.onCastRelease();
 		});
 
 		addEventListener('blur', () => {
 			this.input.keys = {};
 			this.slotControls?.reset();
 			this.input.touchStick = { x: 0, y: 0 };
+			this.resetMouseState();
 		});
+	}
+
+	bindMouse(target: HTMLElement): void {
+		target.addEventListener('contextmenu', (event) => event.preventDefault());
+
+		target.addEventListener('pointerdown', (event) => {
+			if (event.pointerType === 'touch') return;
+			if (event.button !== 0 && event.button !== 2) return;
+			event.preventDefault();
+			target.setPointerCapture?.(event.pointerId);
+
+			if (event.button === 0) {
+				if (this.leftMouseDown) return;
+				this.leftMouseDown = true;
+				this.onAction('castStart');
+				return;
+			}
+
+			if (this.rightMouseDown) return;
+			this.rightMouseDown = true;
+			this.rightMouseSprinting = false;
+			this.clearRightMouseTimer();
+			this.rightMouseTimer = window.setTimeout(() => {
+				this.rightMouseTimer = null;
+				if (!this.rightMouseDown) return;
+				this.rightMouseSprinting = true;
+				this.onAction('sprintStart');
+			}, RIGHT_MOUSE_HOLD_MS);
+		});
+
+		target.addEventListener('pointerup', (event) => {
+			if (event.pointerType === 'touch') return;
+			if (event.button !== 0 && event.button !== 2) return;
+			event.preventDefault();
+
+			if (event.button === 0) {
+				if (!this.leftMouseDown) return;
+				this.leftMouseDown = false;
+				this.onCastRelease();
+				return;
+			}
+
+			if (!this.rightMouseDown) return;
+			this.rightMouseDown = false;
+			this.clearRightMouseTimer();
+			if (this.rightMouseSprinting) {
+				this.rightMouseSprinting = false;
+				this.onAction('sprintEnd');
+			} else {
+				this.onAction('dodge');
+			}
+		});
+
+		target.addEventListener('pointercancel', () => this.resetMouseState());
 	}
 
 	bindTouch(): void {
@@ -111,9 +169,7 @@ export class InputSystem {
 					this.onAction(action);
 				}
 			}
-			if (!down && wasDown && action === 'castStart') {
-				this.onCastRelease();
-			}
+			if (!down && wasDown && action === 'castStart') this.onCastRelease();
 			this.input.padPrev[index] = down;
 		}
 
@@ -132,6 +188,7 @@ export class InputSystem {
 		this.input.keys = {};
 		this.input.touchStick = { x: 0, y: 0 };
 		this.slotControls?.reset();
+		this.resetMouseState();
 	}
 
 	private mapKeyboardDown(key: string): PlayerAction | null {
@@ -145,12 +202,18 @@ export class InputSystem {
 		return null;
 	}
 
-	private mapKeyboardUp(key: string): PlayerAction | null {
-		if (key === 'k') return 'castStart';
-		return null;
+	private clearRightMouseTimer(): void {
+		if (this.rightMouseTimer === null) return;
+		window.clearTimeout(this.rightMouseTimer);
+		this.rightMouseTimer = null;
 	}
 
-	private actionStorageKey(action: PlayerAction): string {
-		return action;
+	private resetMouseState(): void {
+		this.clearRightMouseTimer();
+		if (this.leftMouseDown) this.onCastRelease();
+		if (this.rightMouseSprinting) this.onAction('sprintEnd');
+		this.leftMouseDown = false;
+		this.rightMouseDown = false;
+		this.rightMouseSprinting = false;
 	}
 }
