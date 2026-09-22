@@ -36,3 +36,31 @@ body.boss-intro #bossHud{opacity:0}body.boss-intro #actionSlots{opacity:.35;poin
 body.combat.post-fight #bossHud{opacity:0}
 body.combat.post-fight.near-interaction #interactionPrompt{opacity:1}
 body.combat.post-fight #slotRight{opacity:.45}
+
+
+/* Grace leveling */
+.grace-card{width:min(760px,94vw);max-height:92vh;overflow:auto}
+.level-up{margin:22px 0 8px;padding:18px;border:1px solid #8d7d574d;background:#090f0c88;text-align:left}
+.level-up-heading{display:flex;justify-content:space-between;gap:20px;padding-bottom:12px;border-bottom:1px solid #7d856f33}
+.level-up-heading>div{display:flex;flex-direction:column;gap:4px}
+.level-up-heading>div:last-child{text-align:right}
+.level-up-heading small{font:8px Arial,sans-serif;letter-spacing:2px;color:#89958a}
+.level-up-heading strong{font:16px Georgia,serif;font-weight:400;color:#e4ddbf}
+.level-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 14px;margin:14px 0}
+.level-stat{display:grid;grid-template-columns:minmax(86px,1fr) 30px minmax(64px,auto) 30px;gap:6px;align-items:center;min-height:38px;border-bottom:1px solid #73806e22}
+.level-stat span{font:12px Georgia,serif;color:#cfc9b7}
+.level-stat strong{text-align:center;font:12px Arial,sans-serif;color:#e5d6a7;white-space:nowrap}
+.level-stat button{width:30px;height:30px;padding:0;border:1px solid #7f8d8066;background:#111a16;color:#d7d2c0;font:18px Arial,sans-serif}
+.level-stat button:hover:not(:disabled){border-color:#d4bb7a99;background:#8e73412b}
+.level-stat button:disabled{opacity:.28;cursor:default}
+.level-preview{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+.level-preview span{display:flex;flex-direction:column;gap:3px;padding:8px;border:1px solid #72806e33;background:#11181488;font:8px Arial,sans-serif;letter-spacing:1px;color:#89958a;text-transform:uppercase}
+.level-preview strong{font:14px Georgia,serif;font-weight:400;color:#ddd6c4;letter-spacing:0;text-transform:none}
+.level-cost{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-top:1px solid #7d856f33;font:10px Arial,sans-serif;letter-spacing:1.5px;color:#9ca69a}
+.level-cost strong{font:17px Georgia,serif;font-weight:400;color:#e0c27d}
+.level-cost strong.is-unaffordable{color:#c26d62}
+.level-actions{display:grid;grid-template-columns:1fr 2fr;gap:8px}
+.level-actions .menuButton{margin-top:0}
+.level-confirm{border-color:#b99f62}
+.level-confirm:disabled{opacity:.35;cursor:default}
+@media(max-width:620px){.grace-card{padding:18px}.level-up{padding:12px}.level-stats{grid-template-columns:1fr}.level-preview{grid-template-columns:repeat(2,1fr)}.level-stat{grid-template-columns:minmax(80px,1fr) 30px minmax(58px,auto) 30px}.level-up-heading strong{font-size:14px}}
