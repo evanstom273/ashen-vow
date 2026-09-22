@@ -225,7 +225,6 @@ export class InputSystem {
 		this.slotControls?.reset();
 		this.resetMouseState();
 		this.resetGamepadState();
-		this.resetGamepadState();
 	}
 
 	private mapKeyboardDown(key: string): PlayerAction | null {
