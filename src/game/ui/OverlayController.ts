@@ -1,5 +1,14 @@
 import { getFightDefinition } from '../content/fights.ts';
-import type { FightId, TravelFormId } from '../types.ts';
+import {
+	PLAYER_ATTRIBUTE_ORDER,
+	countAttributeIncreases,
+	getDodgeDistanceMultiplier,
+	getLevelUpCostForCount,
+	getMaxHp,
+	getMaxStamina,
+	getMovementSpeedMultiplier,
+} from '../content/progression.ts';
+import type { FightId, GameState, PlayerAttributes, TravelFormId } from '../types.ts';
 
 function wait(ms: number): Promise<void> {
 	return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -23,6 +32,14 @@ export class OverlayController {
 	private readonly bossDialogueNameEl = $('bossDialogueName');
 	private readonly bossDialogueTextEl = $('bossDialogueText');
 	private readonly graceMenuEl = $('graceMenu');
+	private readonly levelPreviewEl = $('levelPreview');
+	private readonly levelRunesHeldEl = $('levelRunesHeld');
+	private readonly levelHpPreviewEl = $('levelHpPreview');
+	private readonly levelSpPreviewEl = $('levelSpPreview');
+	private readonly levelMovePreviewEl = $('levelMovePreview');
+	private readonly levelDodgePreviewEl = $('levelDodgePreview');
+	private readonly levelCostEl = $('levelCost');
+	private readonly confirmLevelUpEl = $('confirmLevelUp') as HTMLButtonElement;
 	private readonly transitionCurtainEl = $('transitionCurtain');
 	private readonly loadingCardEl = $('loadingCard');
 	private readonly loadingAreaEl = $('loadingArea');
@@ -43,9 +60,35 @@ export class OverlayController {
 		document.body.classList.remove('boss-intro');
 	}
 
-	showGraceMenu(selectedForm: TravelFormId): void {
+	showGraceMenu(selectedForm: TravelFormId, state: GameState, draft: PlayerAttributes): void {
 		this.graceMenuEl.querySelectorAll<HTMLButtonElement>('[data-form]').forEach((button) => {
 			button.classList.toggle('is-selected', button.dataset.form === selectedForm);
+		});
+		const increases = countAttributeIncreases(state.attributes, draft);
+		const cost = getLevelUpCostForCount(state.level, increases);
+		const projectedLevel = state.level + increases;
+		this.levelPreviewEl.textContent = increases > 0 ? `Level ${state.level} → ${projectedLevel}` : `Level ${state.level}`;
+		this.levelRunesHeldEl.textContent = state.runes.toLocaleString('en-GB');
+		this.levelHpPreviewEl.textContent = String(getMaxHp(draft.vigor));
+		this.levelSpPreviewEl.textContent = String(getMaxStamina(draft.endurance));
+		this.levelMovePreviewEl.textContent = `${Math.round(getMovementSpeedMultiplier(draft.endurance) * 100)}%`;
+		this.levelDodgePreviewEl.textContent = `${Math.round(getDodgeDistanceMultiplier(draft.endurance) * 100)}%`;
+		this.levelCostEl.textContent = cost.toLocaleString('en-GB');
+		this.levelCostEl.classList.toggle('is-unaffordable', cost > state.runes);
+		this.confirmLevelUpEl.disabled = increases === 0 || cost > state.runes;
+		for (const stat of PLAYER_ATTRIBUTE_ORDER) {
+			const valueEl = this.graceMenuEl.querySelector<HTMLElement>(`[data-level-value="${stat}"]`);
+			if (valueEl) {
+				valueEl.textContent = draft[stat] === state.attributes[stat]
+					? String(draft[stat])
+					: `${state.attributes[stat]} → ${draft[stat]}`;
+			}
+		}
+		this.graceMenuEl.querySelectorAll<HTMLButtonElement>('[data-level-stat]').forEach((button) => {
+			const stat = button.dataset.levelStat as keyof PlayerAttributes | undefined;
+			const delta = Number(button.dataset.levelDelta ?? 0);
+			if (!stat) return;
+			button.disabled = delta < 0 ? draft[stat] <= state.attributes[stat] : draft[stat] >= 99;
 		});
 		this.graceMenuEl.hidden = false;
 	}

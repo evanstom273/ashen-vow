@@ -4,6 +4,13 @@ import { getAreaForFight, getAreaSpawn } from './content/areas.ts';
 import { getFightDefinition } from './content/fights.ts';
 import { getEnemyDefinition } from './content/enemies.ts';
 import { PLAYER_TUNING } from './content/playerDefaults.ts';
+import {
+	MAX_ATTRIBUTE_VALUE,
+	applyDerivedVitals,
+	countAttributeIncreases,
+	getLevelUpCostForCount,
+	getMovementSpeedMultiplier,
+} from './content/progression.ts';
 import { getTravelFormDefinition } from './content/travelForms.ts';
 import { decayShake, spawnBurst, updateParticles } from './effects/particles.ts';
 import { updateDamageNumbers } from './effects/damageNumbers.ts';
@@ -37,7 +44,7 @@ import {
 	isNearGrace,
 	resolveOverworldCollisions,
 } from './world/overworldContent.ts';
-import type { AreaId, FightId, GameState, InputState, PlayerAction, TravelFormId } from './types.ts';
+import type { AreaId, FightId, GameState, InputState, PlayerAction, PlayerAttributeId, PlayerAttributes, TravelFormId } from './types.ts';
 
 function wait(ms: number): Promise<void> {
 	return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -58,6 +65,7 @@ export class Game {
 	private transitioning = false;
 	private bossIntroActive = false;
 	private graceMenuOpen = false;
+	private levelDraft: PlayerAttributes | null = null;
 
 	constructor(canvas: HTMLCanvasElement) {
 		this.renderer = new CanvasRenderer(canvas);
@@ -76,6 +84,8 @@ export class Game {
 		const menuButton = document.getElementById('menu');
 		const pauseButton = document.getElementById('pause');
 		const closeGraceMenu = document.getElementById('closeGraceMenu');
+		const confirmLevelUp = document.getElementById('confirmLevelUp');
+		const resetLevelUp = document.getElementById('resetLevelUp');
 
 		beginButton?.addEventListener('click', () => {
 			if (this.state.scene.kind === 'title') this.enterWorld('grace');
@@ -85,6 +95,15 @@ export class Game {
 		menuButton?.addEventListener('click', () => this.returnToMenu());
 		pauseButton?.addEventListener('click', () => this.togglePause());
 		closeGraceMenu?.addEventListener('click', () => this.closeGraceMenu());
+		confirmLevelUp?.addEventListener('click', () => this.confirmLevelUp());
+		resetLevelUp?.addEventListener('click', () => this.resetLevelDraft());
+		document.querySelectorAll<HTMLButtonElement>('[data-level-stat]').forEach((button) => {
+			button.addEventListener('click', () => {
+				const stat = button.dataset.levelStat as PlayerAttributeId | undefined;
+				const delta = Number(button.dataset.levelDelta ?? 0);
+				if (stat && (delta === 1 || delta === -1)) this.adjustLevelDraft(stat, delta);
+			});
+		});
 		document.querySelectorAll<HTMLButtonElement>('[data-form]').forEach((button) => {
 			button.addEventListener('click', () => {
 				const form = button.dataset.form as TravelFormId | undefined;
@@ -255,6 +274,7 @@ export class Game {
 		this.overlay.hideBossIntro();
 		this.overlay.hideGraceMenu();
 		this.graceMenuOpen = false;
+		this.levelDraft = null;
 		this.scenes.returnToTitle();
 		this.overlay.showMainMenu();
 	}
@@ -350,23 +370,62 @@ export class Game {
 		this.audio.play(520, 0.55, 'sine', 0.035);
 		this.announce('GRACE RESTORED · BOSSES RETURN', 2.4);
 		this.graceMenuOpen = true;
+		this.levelDraft = { ...this.state.attributes };
 		this.input.clearKeys();
-		this.overlay.showGraceMenu(this.state.player.selectedTravelForm);
+		this.refreshGraceMenu();
 		this.hud.sync(this.state);
 	}
 
 	private closeGraceMenu(): void {
 		this.graceMenuOpen = false;
+		this.levelDraft = null;
 		this.overlay.hideGraceMenu();
 		this.lastFrameTime = performance.now();
 	}
 
 	private selectTravelForm(form: TravelFormId): void {
 		this.state.player.selectedTravelForm = form;
-		this.overlay.showGraceMenu(form);
+		this.refreshGraceMenu();
 		this.hud.sync(this.state);
 		this.audio.init();
 		this.audio.play(360, 0.12, 'sine', 0.025);
+	}
+
+	private refreshGraceMenu(): void {
+		if (!this.levelDraft) this.levelDraft = { ...this.state.attributes };
+		this.overlay.showGraceMenu(this.state.player.selectedTravelForm, this.state, this.levelDraft);
+	}
+
+	private adjustLevelDraft(stat: PlayerAttributeId, delta: -1 | 1): void {
+		if (!this.graceMenuOpen || !this.levelDraft) return;
+		const minimum = this.state.attributes[stat];
+		this.levelDraft[stat] = Math.max(minimum, Math.min(MAX_ATTRIBUTE_VALUE, this.levelDraft[stat] + delta));
+		this.refreshGraceMenu();
+	}
+
+	private resetLevelDraft(): void {
+		if (!this.graceMenuOpen) return;
+		this.levelDraft = { ...this.state.attributes };
+		this.refreshGraceMenu();
+	}
+
+	private confirmLevelUp(): void {
+		if (!this.graceMenuOpen || !this.levelDraft) return;
+		const increases = countAttributeIncreases(this.state.attributes, this.levelDraft);
+		if (increases <= 0) return;
+		const cost = getLevelUpCostForCount(this.state.level, increases);
+		if (cost > this.state.runes) return;
+
+		this.state.runes -= cost;
+		this.state.level += increases;
+		this.state.attributes = { ...this.levelDraft };
+		applyDerivedVitals(this.state.player, this.state.attributes, true);
+		this.levelDraft = { ...this.state.attributes };
+		this.hud.sync(this.state);
+		this.refreshGraceMenu();
+		this.audio.init();
+		this.audio.play(640, 0.35, 'sine', 0.035);
+		this.announce(`LEVEL ${this.state.level} · ATTRIBUTES STRENGTHENED`, 2.2);
 	}
 
 	private updateWorldInteractionPrompt(): void {
@@ -535,7 +594,7 @@ export class Game {
 		const beastSpeed = sprinting ? form.sprintSpeed : form.walkSpeed;
 		const morph = player.transformProgress * player.transformProgress * (3 - 2 * player.transformProgress);
 		const speed = humanSpeed + (beastSpeed - humanSpeed) * morph;
-		return speed / PLAYER_TUNING.movement.normalSpeed;
+		return (speed / PLAYER_TUNING.movement.normalSpeed) * getMovementSpeedMultiplier(this.state.attributes.endurance);
 	}
 
 	private applySprintDrain(dt: number, amount: number, moving: boolean): boolean {

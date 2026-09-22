@@ -1,15 +1,22 @@
 import { PLAYER_START } from '../content/playerDefaults.ts';
+import { STARTING_ATTRIBUTES, STARTING_LEVEL, getMaxHp, getMaxStamina } from '../content/progression.ts';
 import { getAreaForFight } from '../content/areas.ts';
 import { getFightDefinition } from '../content/fights.ts';
 import { getEnemyDefinition } from '../content/enemies.ts';
 import { initializeSpellLoadout, replenishSpellsAtRest } from './spellState.ts';
 import { createInitialWorldState } from './worldState.ts';
 import { createWorldEnemyStates } from './worldEnemyState.ts';
-import type { BossState, FightId, GameState, InputState, PlayerState } from '../types.ts';
+import type { BossState, FightId, GameState, InputState, PlayerAttributes, PlayerState } from '../types.ts';
 
-export function createPlayerState(): PlayerState {
+export function createPlayerState(attributes: PlayerAttributes = STARTING_ATTRIBUTES): PlayerState {
+	const maxHp = getMaxHp(attributes.vigor);
+	const maxSp = getMaxStamina(attributes.endurance);
 	return {
 		...PLAYER_START,
+		hp: maxHp,
+		maxHp,
+		sp: maxSp,
+		maxSp,
 		roll: 0,
 		inv: 0,
 		cd: 0,
@@ -63,8 +70,10 @@ export function createInitialGameState(): GameState {
 		attempts: 0,
 		runes: 0,
 		pendingRuneReward: 0,
+		level: STARTING_LEVEL,
+		attributes: { ...STARTING_ATTRIBUTES },
 		time: 0,
-		player: createPlayerState(),
+		player: createPlayerState(STARTING_ATTRIBUTES),
 		boss: createBossState(initialFight),
 		worldEnemies: createWorldEnemyStates(world.enemyConfigs),
 		worldEnemyProjectiles: [],
@@ -103,7 +112,7 @@ export function resetCombatState(state: GameState, preserveResources = false): v
 	const spawn = area.spawns[0];
 	const previousPlayer = state.player;
 	state.currentAreaId = area.id;
-	state.player = createPlayerState();
+	state.player = createPlayerState(state.attributes);
 	state.player.selectedTravelForm = previousPlayer.selectedTravelForm;
 	state.player.transformed = false;
 	state.player.transformTarget = false;

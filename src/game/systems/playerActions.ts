@@ -7,6 +7,7 @@ import {
 	getEquippedSpellDefinition,
 } from '../state/spellState.ts';
 import { PLAYER_TUNING } from '../content/playerDefaults.ts';
+import { getDodgeDistanceMultiplier } from '../content/progression.ts';
 import { spawnBurst } from '../effects/particles.ts';
 import type { GameState, PlayerAction, StickInput } from '../types.ts';
 import type { CombatContext } from './combat.ts';
@@ -52,7 +53,7 @@ export function handlePlayerAction(ctx: PlayerActionContext, action: PlayerActio
 		state.charge = 0;
 	}
 
-	if (action === 'useConsumable' && player.flasks > 0 && player.hp < 100 && player.heal <= 0 && player.roll <= 0 && player.cd <= 0) {
+	if (action === 'useConsumable' && player.flasks > 0 && player.hp < player.maxHp && player.heal <= 0 && player.roll <= 0 && player.cd <= 0) {
 		player.heal = PLAYER_TUNING.heal.duration;
 		player.cd = PLAYER_TUNING.heal.cooldown;
 		player.flasks -= 1;
@@ -104,7 +105,7 @@ export function updatePlayerRegen(state: GameState, dt: number): void {
 	state.boss.hitReact = Math.max(0, state.boss.hitReact - dt);
 
 	if (player.regen <= 0 && player.roll <= 0 && !state.charging) {
-		player.sp = Math.min(100, player.sp + PLAYER_TUNING.regen.staminaPerSecond * dt);
+		player.sp = Math.min(player.maxSp, player.sp + PLAYER_TUNING.regen.staminaPerSecond * dt);
 	}
 }
 
@@ -116,7 +117,7 @@ export function updatePlayerHealing(ctx: CombatContext, dt: number): void {
 
 	player.heal -= dt;
 	if (player.heal <= 0) {
-		player.hp = Math.min(100, player.hp + PLAYER_TUNING.heal.restore);
+		player.hp = Math.min(player.maxHp, player.hp + PLAYER_TUNING.heal.restore);
 		spawnBurst(state, player.x, player.y, '#f3d484', 30, 70);
 		audio.play(750, 0.3);
 	}
@@ -138,8 +139,9 @@ export function updatePlayerMovement(state: GameState, movement: StickInput, dt:
 
 	if (player.roll > 0) {
 		player.roll -= dt;
-		player.x += player.dx * PLAYER_TUNING.dodge.speed * speedScale * dt;
-		player.y += player.dy * PLAYER_TUNING.dodge.speed * speedScale * dt;
+		const dodgeScale = getDodgeDistanceMultiplier(state.attributes.endurance);
+		player.x += player.dx * PLAYER_TUNING.dodge.speed * speedScale * dodgeScale * dt;
+		player.y += player.dy * PLAYER_TUNING.dodge.speed * speedScale * dodgeScale * dt;
 		spawnBurst(state, player.x, player.y, '#8a9d92', 1, 20);
 	} else if (length) {
 		const speed = player.heal > 0
