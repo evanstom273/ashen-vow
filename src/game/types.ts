@@ -14,6 +14,17 @@ export type EnemyAwarenessState = 'unaware' | 'suspicious' | 'alerted' | 'search
 export type FightId = 'aeron' | 'vael';
 export type TravelFormId = 'raven' | 'wolf';
 export type UtilityItemId = 'flask' | 'transform';
+export type PlayerAttributeId = 'vigor' | 'endurance' | 'strength' | 'dexterity' | 'intelligence' | 'faith' | 'arcane';
+
+export interface PlayerAttributes {
+	vigor: number;
+	endurance: number;
+	strength: number;
+	dexterity: number;
+	intelligence: number;
+	faith: number;
+	arcane: number;
+}
 export type AreaId = 'ashen-wilds' | 'aeron-arena' | 'vael-arena';
 export type AreaKind = 'overworld' | 'boss' | 'interior';
 
@@ -170,7 +181,9 @@ export interface PlayerState {
 	x: number;
 	y: number;
 	hp: number;
+	maxHp: number;
 	sp: number;
+	maxSp: number;
 	flasks: number;
 	angle: number;
 	roll: number;
@@ -315,6 +328,8 @@ export interface GameState {
 	attempts: number;
 	runes: number;
 	pendingRuneReward: number;
+	level: number;
+	attributes: PlayerAttributes;
 	time: number;
 	player: PlayerState;
 	boss: BossState;
