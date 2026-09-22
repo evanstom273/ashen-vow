@@ -18,6 +18,8 @@ import { GameEventBus } from './events/GameEventBus.ts';
 import { SceneController } from './flow/SceneController.ts';
 import { InputSystem } from './input/InputSystem.ts';
 import { CanvasRenderer } from './render/CanvasRenderer.ts';
+import { SaveRepository } from './save/SaveRepository.ts';
+import { applySaveSnapshot } from './save/saveState.ts';
 import { getArenaExitPosition } from './render/drawArena.ts';
 import { updateBoss } from './systems/bossUpdate.ts';
 import { constrainToArea, type CombatContext } from './systems/combat.ts';
@@ -58,6 +60,7 @@ export class Game {
 	private readonly scenes = new SceneController(this.state, this.events);
 	private readonly hud = new DomHud();
 	private readonly overlay = new OverlayController();
+	private readonly saves = new SaveRepository();
 	private readonly renderer: CanvasRenderer;
 	private readonly input: InputSystem;
 	private lastFrameTime = 0;
@@ -66,6 +69,8 @@ export class Game {
 	private bossIntroActive = false;
 	private graceMenuOpen = false;
 	private levelDraft: PlayerAttributes | null = null;
+	private currentSaveId: string | null = null;
+	private saveQueue: Promise<void> = Promise.resolve();
 
 	constructor(canvas: HTMLCanvasElement) {
 		this.renderer = new CanvasRenderer(canvas);
@@ -74,7 +79,7 @@ export class Game {
 			(action) => this.onAction(action),
 			() => this.onCastRelease(),
 			() => this.state.mode,
-			() => this.enterWorld('grace'),
+			() => void this.continueLatestOrStartNew(),
 		);
 		this.input.bindKeyboard();
 		this.input.bindMouse(canvas);
@@ -82,6 +87,9 @@ export class Game {
 
 		const beginButton = document.getElementById('begin');
 		const secondFightButton = document.getElementById('secondFight');
+		const loadGameButton = document.getElementById('loadGame');
+		const closeLoadGameButton = document.getElementById('closeLoadGame');
+		const saveList = document.getElementById('saveList');
 		const menuButton = document.getElementById('menu');
 		const pauseButton = document.getElementById('pause');
 		const closeGraceMenu = document.getElementById('closeGraceMenu');
@@ -89,11 +97,20 @@ export class Game {
 		const resetLevelUp = document.getElementById('resetLevelUp');
 
 		beginButton?.addEventListener('click', () => {
-			if (this.state.scene.kind === 'title') this.enterWorld('grace');
+			if (this.state.scene.kind === 'title') void this.continueGame();
 			else this.start();
 		});
-		secondFightButton?.addEventListener('click', () => void this.transitionToFight('vael', null, false));
-		menuButton?.addEventListener('click', () => this.returnToMenu());
+		secondFightButton?.addEventListener('click', () => {
+			if (this.state.scene.kind === 'title') void this.newGame();
+		});
+		loadGameButton?.addEventListener('click', () => void this.openLoadGameMenu());
+		closeLoadGameButton?.addEventListener('click', () => void this.refreshMainMenu());
+		saveList?.addEventListener('click', (event) => {
+			const target = event.target as HTMLElement | null;
+			const button = target?.closest<HTMLButtonElement>('[data-save-id]');
+			if (button?.dataset.saveId) void this.loadGame(button.dataset.saveId);
+		});
+		menuButton?.addEventListener('click', () => void this.returnToMenu());
 		pauseButton?.addEventListener('click', () => this.togglePause());
 		closeGraceMenu?.addEventListener('click', () => this.closeGraceMenu());
 		confirmLevelUp?.addEventListener('click', () => this.confirmLevelUp());
@@ -111,7 +128,7 @@ export class Game {
 				if (form) this.selectTravelForm(form);
 			});
 		});
-		this.overlay.showMainMenu();
+		void this.refreshMainMenu();
 
 		addEventListener('blur', () => {
 			if ((this.state.scene.kind === 'combat' || this.state.scene.kind === 'world') && !this.transitioning && !this.graceMenuOpen) {
@@ -120,6 +137,101 @@ export class Game {
 		});
 
 		requestAnimationFrame((now) => this.frame(now));
+	}
+
+	private async refreshMainMenu(): Promise<void> {
+		try {
+			const saves = await this.saves.list();
+			this.overlay.showMainMenu(saves.length > 0);
+		} catch (error) {
+			console.error('Failed to read save database', error);
+			this.overlay.showMainMenu(false);
+		}
+	}
+
+	private async openLoadGameMenu(): Promise<void> {
+		try {
+			const saves = await this.saves.list();
+			if (saves.length === 0) {
+				this.overlay.showMainMenu(false);
+				return;
+			}
+			this.overlay.showLoadGameMenu(saves);
+		} catch (error) {
+			console.error('Failed to list saves', error);
+			await this.refreshMainMenu();
+		}
+	}
+
+	private async continueLatestOrStartNew(): Promise<void> {
+		const latest = await this.saves.getLatest();
+		if (latest) {
+			await this.loadSaveRecord(latest.id);
+			return;
+		}
+		await this.newGame();
+	}
+
+	private async continueGame(): Promise<void> {
+		try {
+			const latest = await this.saves.getLatest();
+			if (!latest) {
+				await this.newGame();
+				return;
+			}
+			await this.loadSaveRecord(latest.id);
+		} catch (error) {
+			console.error('Failed to continue save', error);
+			await this.refreshMainMenu();
+		}
+	}
+
+	private async newGame(): Promise<void> {
+		try {
+			this.input.clearKeys();
+			this.resetTravelMotion();
+			Object.assign(this.state, createInitialGameState());
+			const record = await this.saves.create(this.state);
+			this.currentSaveId = record.id;
+			this.enterWorld('grace');
+		} catch (error) {
+			console.error('Failed to create save', error);
+			await this.refreshMainMenu();
+		}
+	}
+
+	private async loadGame(id: string): Promise<void> {
+		try {
+			await this.loadSaveRecord(id);
+		} catch (error) {
+			console.error('Failed to load save', error);
+			await this.refreshMainMenu();
+		}
+	}
+
+	private async loadSaveRecord(id: string): Promise<void> {
+		const record = await this.saves.get(id);
+		if (!record) throw new Error(`Save not found: ${id}`);
+		this.input.clearKeys();
+		this.resetTravelMotion();
+		applySaveSnapshot(this.state, record.snapshot);
+		this.currentSaveId = record.id;
+		this.enterWorld('grace');
+	}
+
+	private autosave(): Promise<void> {
+		const saveId = this.currentSaveId;
+		if (!saveId) return Promise.resolve();
+
+		this.saveQueue = this.saveQueue
+			.then(async () => {
+				if (this.currentSaveId !== saveId) return;
+				await this.saves.save(saveId, this.state);
+			})
+			.catch((error) => {
+				console.error('Autosave failed', error);
+			});
+		return this.saveQueue;
 	}
 
 	private get combatContext(): CombatContext {
@@ -265,7 +377,8 @@ export class Game {
 		this.lastFrameTime = performance.now();
 	}
 
-	private returnToMenu(): void {
+	private async returnToMenu(): Promise<void> {
+		await this.autosave();
 		this.resetTravelMotion();
 		this.state.charging = false;
 		this.state.charge = 0;
@@ -277,7 +390,7 @@ export class Game {
 		this.graceMenuOpen = false;
 		this.levelDraft = null;
 		this.scenes.returnToTitle();
-		this.overlay.showMainMenu();
+		await this.refreshMainMenu();
 	}
 
 	start(): void {
@@ -375,6 +488,7 @@ export class Game {
 		this.input.clearKeys();
 		this.refreshGraceMenu();
 		this.hud.sync(this.state);
+		void this.autosave();
 	}
 
 	private closeGraceMenu(): void {
@@ -390,6 +504,7 @@ export class Game {
 		this.hud.sync(this.state);
 		this.audio.init();
 		this.audio.play(360, 0.12, 'sine', 0.025);
+		void this.autosave();
 	}
 
 	private refreshGraceMenu(): void {
@@ -427,6 +542,7 @@ export class Game {
 		this.audio.init();
 		this.audio.play(640, 0.35, 'sine', 0.035);
 		this.announce(`LEVEL ${this.state.level} · ATTRIBUTES STRENGTHENED`, 2.2);
+		void this.autosave();
 	}
 
 	private updateWorldInteractionPrompt(): void {
@@ -684,6 +800,7 @@ export class Game {
 			if (previous < 0.28 && this.state.bossDeathProgress >= 0.28 && this.state.pendingRuneReward > 0) {
 				this.state.runes += this.state.pendingRuneReward;
 				this.state.pendingRuneReward = 0;
+				void this.autosave();
 			}
 			if (Math.random() < 0.35) {
 				spawnBurst(
