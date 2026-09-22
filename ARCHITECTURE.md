@@ -83,3 +83,16 @@ Player progression is data-driven through `src/game/content/progression.ts`.
 - Strength, Dexterity, Intelligence, and Faith are reserved for shared weapon/catalyst requirements and scaling.
 - Arcane is intentionally levelable but currently has no gameplay effect.
 - Leveling is performed at Grace. Changes are staged in a draft, previewed, and only spend runes when confirmed.
+
+
+## Save system
+
+Local saves use Dexie over IndexedDB and live under `src/game/save/*`.
+
+- Save slots are unlimited; each new game creates a `Journey N` record with a UUID.
+- The title screen exposes Continue (most recently updated save), New Game, and Load Game.
+- Save records carry lightweight metadata plus a versioned persistent snapshot. Runtime-only objects such as projectiles, particles, hit-stop, input, boss attack timers, and animation state are never serialized.
+- Snapshot version 1 persists level, attributes, runes, attempts, world/boss state, generated enemy seed/configuration, checkpoint state, travel form, utility selection, and equipped spell.
+- Loading starts from a fresh runtime state, reapplies the persistent snapshot, reconstructs world enemies from their persisted generated configuration, and resumes safely at Grace.
+- Autosaves are serialized through a queue and currently occur when resting at Grace, selecting a travel form, confirming a level-up, receiving a boss rune reward, and returning to the title screen.
+- Future schema changes should add explicit snapshot/database migrations instead of silently changing the meaning of version 1.
