@@ -9,6 +9,7 @@ import {
 	getMovementSpeedMultiplier,
 } from '../content/progression.ts';
 import type { FightId, GameState, PlayerAttributes, TravelFormId } from '../types.ts';
+import type { SaveSummary } from '../save/saveTypes.ts';
 
 function wait(ms: number): Promise<void> {
 	return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -26,7 +27,10 @@ export class OverlayController {
 	private readonly descriptionEl = $('description');
 	private readonly beginEl = $('begin') as HTMLButtonElement;
 	private readonly secondFightEl = $('secondFight') as HTMLButtonElement;
+	private readonly loadGameEl = $('loadGame') as HTMLButtonElement;
 	private readonly menuEl = $('menu') as HTMLButtonElement;
+	private readonly saveListPanelEl = $('saveListPanel');
+	private readonly saveListEl = $('saveList');
 	private readonly tipEl = $('tip');
 	private readonly bossDialogueEl = $('bossDialogue');
 	private readonly bossDialogueNameEl = $('bossDialogueName');
@@ -131,22 +135,58 @@ export class OverlayController {
 	}
 
 	private setMenuChoicesVisible(visible: boolean): void {
+		this.beginEl.hidden = !visible;
 		this.secondFightEl.hidden = !visible;
+		this.loadGameEl.hidden = !visible;
 		this.menuEl.hidden = visible;
+		if (visible) this.saveListPanelEl.hidden = true;
 	}
 
-	showMainMenu(): void {
+	showMainMenu(hasSaves: boolean): void {
 		this.eyebrowEl.textContent = 'THE ROAD IS OPEN.';
 		this.titleEl.innerHTML = 'ASHEN <span>VOW</span>';
 		this.descriptionEl.innerHTML = 'Enter the Ashen Wilds and follow the old road toward the Hollow King.';
-		this.beginEl.innerHTML = '<small>62,500 m² · EXPLORATION PROTOTYPE</small><strong>ENTER THE ASHEN WILDS</strong><span>→</span>';
-		this.secondFightEl.innerHTML = '<small>DIRECT DUEL · LEFT ROUTE TO COME</small><strong>VAEL, THE STARVED SEER</strong><span>→</span>';
-		this.tipEl.textContent = 'The right-hand route is live. The rest of the world can grow around it.';
+		this.beginEl.innerHTML = '<small>MOST RECENT JOURNEY</small><strong>CONTINUE</strong><span>→</span>';
+		this.secondFightEl.innerHTML = '<small>BEGIN AGAIN</small><strong>NEW GAME</strong><span>＋</span>';
+		this.loadGameEl.innerHTML = '<small>CHOOSE A JOURNEY</small><strong>LOAD GAME</strong><span>→</span>';
+		this.beginEl.disabled = !hasSaves;
+		this.loadGameEl.disabled = !hasSaves;
+		this.tipEl.textContent = hasSaves
+			? 'Continue your latest journey, begin a new one, or choose any local save.'
+			: 'No journeys saved yet. Begin a new game to create your first save.';
 		this.setMenuChoicesVisible(true);
 		this.setGameplayScene(null);
 	}
 
+	showLoadGameMenu(saves: SaveSummary[]): void {
+		this.eyebrowEl.textContent = 'CHOOSE YOUR JOURNEY';
+		this.titleEl.textContent = 'LOAD GAME';
+		this.descriptionEl.textContent = 'Local saves stored on this browser.';
+		this.beginEl.hidden = true;
+		this.secondFightEl.hidden = true;
+		this.loadGameEl.hidden = true;
+		this.menuEl.hidden = true;
+		this.saveListPanelEl.hidden = false;
+		this.saveListEl.replaceChildren();
+
+		for (const save of saves) {
+			const button = document.createElement('button');
+			button.type = 'button';
+			button.className = 'save-entry';
+			button.dataset.saveId = save.id;
+			const updated = new Date(save.updatedAt).toLocaleString('en-GB', {
+				dateStyle: 'medium',
+				timeStyle: 'short',
+			});
+			button.innerHTML = `<span><strong>${save.name}</strong><small>Level ${save.level} · ${save.runes.toLocaleString('en-GB')} runes</small></span><time>${updated}</time><b>→</b>`;
+			this.saveListEl.append(button);
+		}
+		this.tipEl.textContent = `${saves.length} saved journey${saves.length === 1 ? '' : 's'} · newest first`;
+		this.setGameplayScene(null);
+	}
+
 	showPauseScreen(inWorld: boolean): void {
+		this.saveListPanelEl.hidden = true;
 		this.eyebrowEl.textContent = inWorld ? 'A MOMENT BENEATH THE BOUGHS' : 'A MOMENT BETWEEN BLOWS';
 		this.titleEl.textContent = 'PAUSED';
 		this.descriptionEl.textContent = inWorld ? 'The old road will still be there.' : 'Take a breath. The arena can wait.';
@@ -158,6 +198,7 @@ export class OverlayController {
 	}
 
 	showWorldDeathScreen(): void {
+		this.saveListPanelEl.hidden = true;
 		this.eyebrowEl.textContent = 'THE WILDS CLAIM ANOTHER';
 		this.titleEl.textContent = 'YOU DIED';
 		this.descriptionEl.textContent = 'Return to Grace and walk the road again.';
@@ -169,6 +210,7 @@ export class OverlayController {
 	}
 
 	showDeathScreen(attempts: number, bossHpPercentTaken: number, fightId: FightId, returnToWorld = false): void {
+		this.saveListPanelEl.hidden = true;
 		const fight = getFightDefinition(fightId);
 		this.eyebrowEl.textContent = fight.copy.deathEyebrow;
 		this.titleEl.textContent = 'YOU DIED';
@@ -181,6 +223,7 @@ export class OverlayController {
 	}
 
 	showVictoryScreen(attempts: number, fightId: FightId, returnToWorld = false): void {
+		this.saveListPanelEl.hidden = true;
 		const fight = getFightDefinition(fightId);
 		this.eyebrowEl.textContent = fight.copy.victoryEyebrow;
 		this.titleEl.textContent = 'VOW FULFILLED';
