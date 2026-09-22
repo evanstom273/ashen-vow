@@ -95,6 +95,32 @@
 					<button type="button" data-form="raven">Ashen Raven<small>spectral corvid</small></button>
 					<button type="button" data-form="wolf">Dusk Wolf<small>swift ash hound</small></button>
 				</div>
+				<div class="level-up">
+					<div class="level-up-heading">
+						<div><small>LEVEL UP</small><strong id="levelPreview">Level 1</strong></div>
+						<div><small>RUNES HELD</small><strong id="levelRunesHeld">0</strong></div>
+					</div>
+					<div id="levelStats" class="level-stats">
+						<div class="level-stat" data-stat-row="vigor"><span>Vigor</span><button type="button" data-level-stat="vigor" data-level-delta="-1">−</button><strong data-level-value="vigor">10</strong><button type="button" data-level-stat="vigor" data-level-delta="1">+</button></div>
+						<div class="level-stat" data-stat-row="endurance"><span>Endurance</span><button type="button" data-level-stat="endurance" data-level-delta="-1">−</button><strong data-level-value="endurance">10</strong><button type="button" data-level-stat="endurance" data-level-delta="1">+</button></div>
+						<div class="level-stat" data-stat-row="strength"><span>Strength</span><button type="button" data-level-stat="strength" data-level-delta="-1">−</button><strong data-level-value="strength">10</strong><button type="button" data-level-stat="strength" data-level-delta="1">+</button></div>
+						<div class="level-stat" data-stat-row="dexterity"><span>Dexterity</span><button type="button" data-level-stat="dexterity" data-level-delta="-1">−</button><strong data-level-value="dexterity">10</strong><button type="button" data-level-stat="dexterity" data-level-delta="1">+</button></div>
+						<div class="level-stat" data-stat-row="intelligence"><span>Intelligence</span><button type="button" data-level-stat="intelligence" data-level-delta="-1">−</button><strong data-level-value="intelligence">10</strong><button type="button" data-level-stat="intelligence" data-level-delta="1">+</button></div>
+						<div class="level-stat" data-stat-row="faith"><span>Faith</span><button type="button" data-level-stat="faith" data-level-delta="-1">−</button><strong data-level-value="faith">10</strong><button type="button" data-level-stat="faith" data-level-delta="1">+</button></div>
+						<div class="level-stat" data-stat-row="arcane"><span>Arcane</span><button type="button" data-level-stat="arcane" data-level-delta="-1">−</button><strong data-level-value="arcane">10</strong><button type="button" data-level-stat="arcane" data-level-delta="1">+</button></div>
+					</div>
+					<div class="level-preview">
+						<span>HP <strong id="levelHpPreview">100</strong></span>
+						<span>Stamina <strong id="levelSpPreview">100</strong></span>
+						<span>Move <strong id="levelMovePreview">100%</strong></span>
+						<span>Dodge <strong id="levelDodgePreview">100%</strong></span>
+					</div>
+					<div class="level-cost"><span>Required Runes</span><strong id="levelCost">0</strong></div>
+					<div class="level-actions">
+						<button type="button" id="resetLevelUp" class="menuButton">RESET</button>
+						<button type="button" id="confirmLevelUp" class="menuButton level-confirm">CONFIRM LEVELS</button>
+					</div>
+				</div>
 				<button type="button" id="closeGraceMenu" class="menuButton">LEAVE GRACE</button>
 			</div>
 		</section>
