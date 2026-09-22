@@ -187,6 +187,9 @@ export class OverlayController {
 
 	showPauseScreen(inWorld: boolean): void {
 		this.saveListPanelEl.hidden = true;
+		this.beginEl.hidden = false;
+		this.beginEl.disabled = false;
+		this.loadGameEl.hidden = true;
 		this.eyebrowEl.textContent = inWorld ? 'A MOMENT BENEATH THE BOUGHS' : 'A MOMENT BETWEEN BLOWS';
 		this.titleEl.textContent = 'PAUSED';
 		this.descriptionEl.textContent = inWorld ? 'The old road will still be there.' : 'Take a breath. The arena can wait.';
@@ -199,6 +202,9 @@ export class OverlayController {
 
 	showWorldDeathScreen(): void {
 		this.saveListPanelEl.hidden = true;
+		this.beginEl.hidden = false;
+		this.beginEl.disabled = false;
+		this.loadGameEl.hidden = true;
 		this.eyebrowEl.textContent = 'THE WILDS CLAIM ANOTHER';
 		this.titleEl.textContent = 'YOU DIED';
 		this.descriptionEl.textContent = 'Return to Grace and walk the road again.';
@@ -211,6 +217,9 @@ export class OverlayController {
 
 	showDeathScreen(attempts: number, bossHpPercentTaken: number, fightId: FightId, returnToWorld = false): void {
 		this.saveListPanelEl.hidden = true;
+		this.beginEl.hidden = false;
+		this.beginEl.disabled = false;
+		this.loadGameEl.hidden = true;
 		const fight = getFightDefinition(fightId);
 		this.eyebrowEl.textContent = fight.copy.deathEyebrow;
 		this.titleEl.textContent = 'YOU DIED';
@@ -224,6 +233,9 @@ export class OverlayController {
 
 	showVictoryScreen(attempts: number, fightId: FightId, returnToWorld = false): void {
 		this.saveListPanelEl.hidden = true;
+		this.beginEl.hidden = false;
+		this.beginEl.disabled = false;
+		this.loadGameEl.hidden = true;
 		const fight = getFightDefinition(fightId);
 		this.eyebrowEl.textContent = fight.copy.victoryEyebrow;
 		this.titleEl.textContent = 'VOW FULFILLED';
