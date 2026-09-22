@@ -6,6 +6,7 @@ import { getEnemyDefinition } from './content/enemies.ts';
 import { PLAYER_TUNING } from './content/playerDefaults.ts';
 import { getTravelFormDefinition } from './content/travelForms.ts';
 import { decayShake, spawnBurst, updateParticles } from './effects/particles.ts';
+import { updateDamageNumbers } from './effects/damageNumbers.ts';
 import { GameEventBus } from './events/GameEventBus.ts';
 import { SceneController } from './flow/SceneController.ts';
 import { InputSystem } from './input/InputSystem.ts';
@@ -662,6 +663,7 @@ export class Game {
 		}
 		this.state.time += dt;
 		updateParticles(this.state, dt);
+		updateDamageNumbers(this.state, dt);
 		decayShake(this.state, dt);
 
 		if (this.state.scene.kind === 'world') {

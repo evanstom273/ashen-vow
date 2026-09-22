@@ -1,5 +1,5 @@
 import type { GameState, Viewport } from '../types.ts';
-import { drawChargeRing, drawKnight, drawParticles, drawProjectiles } from '../render/drawActors.ts';
+import { drawChargeRing, drawDamageNumbers, drawKnight, drawParticles, drawProjectiles } from '../render/drawActors.ts';
 import { drawWorldEnemy, drawWorldEnemyProjectiles } from '../render/worldEnemyRenderer.ts';
 import { getEquippedSpellDefinition } from '../state/spellState.ts';
 import { drawCircle, drawLine } from '../render/primitives.ts';
@@ -516,6 +516,7 @@ export function renderOverworld(
 	drawProjectiles(ctx, state.shots, state.time);
 	drawWorldEnemyProjectiles(ctx, state.worldEnemyProjectiles, state.time);
 	drawParticles(ctx, state.particles);
+	drawDamageNumbers(ctx, state.damageNumbers);
 
 	ctx.restore();
 }

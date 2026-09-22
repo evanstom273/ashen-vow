@@ -240,6 +240,17 @@ export interface Particle {
 	r: number;
 }
 
+export interface DamageNumber {
+	x: number;
+	y: number;
+	vx: number;
+	vy: number;
+	t: number;
+	max: number;
+	amount: number;
+	heavy: boolean;
+}
+
 export interface RingHazard {
 	kind: 'ring';
 	x: number;
@@ -311,6 +322,7 @@ export interface GameState {
 	worldEnemyProjectiles: WorldEnemyProjectile[];
 	shots: Shot[];
 	particles: Particle[];
+	damageNumbers: DamageNumber[];
 	hazards: Hazard[];
 	equippedSpellId: SpellId;
 	spells: Record<SpellId, SpellRuntimeState>;

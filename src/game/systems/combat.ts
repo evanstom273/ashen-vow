@@ -3,6 +3,7 @@ import { getAreaDefinition } from '../content/areas.ts';
 import { PLAYER_TUNING } from '../content/playerDefaults.ts';
 import type { DamageType } from '../content/effects.ts';
 import { spawnBurst } from '../effects/particles.ts';
+import { spawnDamageNumber } from '../effects/damageNumbers.ts';
 import type { AudioManager } from '../audio/AudioManager.ts';
 import type { AreaId, GameState, Vec2 } from '../types.ts';
 
@@ -68,7 +69,10 @@ export function hitBoss(
 
 	const resolved = { ...DEFAULT_HIT_BOSS_OPTIONS, ...options };
 
+	const previousHp = boss.hp;
 	boss.hp = Math.max(0, boss.hp - damage);
+	const damageDealt = previousHp - boss.hp;
+	spawnDamageNumber(state, boss.x, boss.y, damageDealt, damageDealt >= 100);
 	if (resolved.flash) {
 		boss.flash = 0.12;
 		boss.hitReact = 0.16;

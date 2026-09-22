@@ -13,6 +13,7 @@ import { drawBossTelegraph } from './bossTelegraphs.ts';
 import { getEquippedSpellDefinition } from '../state/spellState.ts';
 import {
 	drawChargeRing,
+	drawDamageNumbers,
 	drawKnight,
 	drawParticles,
 	drawProjectiles,
@@ -111,6 +112,7 @@ export class CanvasRenderer {
 
 		drawProjectiles(ctx, state.shots, state.time);
 		drawParticles(ctx, state.particles);
+		drawDamageNumbers(ctx, state.damageNumbers);
 		drawAtmosphericDust(ctx, state.time, state.currentAreaId);
 
 		ctx.restore();

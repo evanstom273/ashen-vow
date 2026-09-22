@@ -3,6 +3,7 @@ import { getEnemyDefinition } from '../content/enemies.ts';
 import { getSpellDefinition } from '../content/spells.ts';
 import { getWeaponClass } from '../content/weapons.ts';
 import { spawnBurst } from '../effects/particles.ts';
+import { spawnDamageNumber } from '../effects/damageNumbers.ts';
 import type { GameState, Vec2, WorldEnemyState } from '../types.ts';
 import { WORLD_PROPS } from '../world/overworldContent.ts';
 import { getEnemySpawn } from '../world/enemySpawns.ts';
@@ -247,7 +248,10 @@ function updateEnemyProjectiles(ctx: CombatContext, dt: number): void {
 
 export function hitWorldEnemy(ctx: CombatContext, enemy: WorldEnemyState, damage: number, color = '#d6b378'): void {
 	if (!enemy.alive) return;
+	const previousHp = enemy.hp;
 	enemy.hp = Math.max(0, enemy.hp - damage);
+	const damageDealt = previousHp - enemy.hp;
+	spawnDamageNumber(ctx.state, enemy.x, enemy.y, damageDealt, damageDealt >= 100);
 	enemy.hitFlash = 0.15;
 	enemy.awareness = ALERT_THRESHOLD;
 	enemy.awarenessState = 'alerted';
