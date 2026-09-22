@@ -77,6 +77,7 @@ export class Game {
 			() => this.enterWorld('grace'),
 		);
 		this.input.bindKeyboard();
+		this.input.bindMouse(canvas);
 		this.input.bindTouch();
 
 		const beginButton = document.getElementById('begin');
@@ -435,13 +436,13 @@ export class Game {
 			return;
 		}
 		if (isNearGrace(this.state.player)) {
-			this.hud.setInteractionPrompt('TAP CENTER / F / A · REST AT GRACE');
+			this.hud.setInteractionPrompt('TAP CENTER / F / Y · REST AT GRACE');
 			this.hud.setContextAction('grace');
 			return;
 		}
 		if (isNearAeronGate(this.state.player)) {
 			if (this.state.world.bosses.aeron.alive) {
-				this.hud.setInteractionPrompt('TAP CENTER / F / A · ENTER THE FORT');
+				this.hud.setInteractionPrompt('TAP CENTER / F / Y · ENTER THE FORT');
 				this.hud.setContextAction('gate');
 			} else {
 				this.hud.setInteractionPrompt('THE HOLLOW KING IS SLAIN · REST AT GRACE TO RESTORE');
@@ -704,7 +705,7 @@ export class Game {
 		if (this.state.arenaExitActive) {
 			const exit = getArenaExitPosition(this.state.currentAreaId);
 			const nearExit = Math.hypot(this.state.player.x - exit.x, this.state.player.y - exit.y) <= 92;
-			this.hud.setInteractionPrompt(nearExit ? 'TAP CENTER / F / A · LEAVE ARENA' : null);
+			this.hud.setInteractionPrompt(nearExit ? 'TAP CENTER / F / Y · LEAVE ARENA' : null);
 			this.hud.setContextAction(nearExit ? 'exit' : 'roll');
 		} else {
 			this.hud.setInteractionPrompt(null);
