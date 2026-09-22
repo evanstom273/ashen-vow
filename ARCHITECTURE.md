@@ -68,3 +68,18 @@ Pull requests run `.github/workflows/ci.yml`, which performs the full TypeScript
 ## Intended expansion path
 
 The next world-scale feature can now be built as area/content data rather than by expanding the boss-demo assumptions in `Game.ts`. The planned overworld can add a new AreaDefinition, exits/interactables and a world scene while reusing persistent world state, scene transitions, generic bounds, events, checkpoints and existing boss controllers.
+
+
+## Player progression
+
+Player progression is data-driven through `src/game/content/progression.ts`.
+
+- Players currently start at level 1 with Vigor, Endurance, Strength, Dexterity, Intelligence, Faith, and Arcane all at 10.
+- Each committed attribute increase raises character level by one.
+- Level 1 -> 2 costs 200 runes; each successive level costs 7.5% more than the previous level, rounded to a whole rune.
+- Vigor drives the max-HP curve, ending at 630 HP at 99 Vigor.
+- Endurance drives max stamina, ending at 750 stamina at 99 Endurance.
+- Endurance also increases movement speed up to +10% and dodge distance up to +15%, both capped at 30 Endurance.
+- Strength, Dexterity, Intelligence, and Faith are reserved for shared weapon/catalyst requirements and scaling.
+- Arcane is intentionally levelable but currently has no gameplay effect.
+- Leveling is performed at Grace. Changes are staged in a draft, previewed, and only spend runes when confirmed.
