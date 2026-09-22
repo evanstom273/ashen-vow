@@ -5,17 +5,18 @@ export type ActionHandler = (action: PlayerAction) => void;
 export type CastReleaseHandler = () => void;
 export type StartHandler = () => void;
 
-const GAMEPAD_ACTION_MAP: Record<string, PlayerAction> = {
-	'0': 'interact',
-	'4': 'cycleSpell',
-	'1': 'dodge',
-	'2': 'activateUtility',
-	'7': 'castStart',
-	'9': 'pause',
-};
-
 const MOVEMENT_KEYS = new Set(['w', 'a', 's', 'd', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
-const RIGHT_MOUSE_HOLD_MS = 180;
+const DODGE_SPRINT_HOLD_MS = 180;
+const PAD = {
+	A: 0,
+	B: 1,
+	X: 2,
+	Y: 3,
+	RB: 5,
+	START: 9,
+	DPAD_UP: 12,
+	DPAD_DOWN: 13,
+} as const;
 
 export class InputSystem {
 	private readonly input: InputState;
@@ -28,6 +29,8 @@ export class InputSystem {
 	private rightMouseDown = false;
 	private rightMouseSprinting = false;
 	private leftMouseDown = false;
+	private gamepadDodgeStartedAt = 0;
+	private gamepadSprinting = false;
 
 	constructor(
 		input: InputState,
@@ -100,7 +103,7 @@ export class InputSystem {
 				if (!this.rightMouseDown) return;
 				this.rightMouseSprinting = true;
 				this.onAction('sprintStart');
-			}, RIGHT_MOUSE_HOLD_MS);
+			}, DODGE_SPRINT_HOLD_MS);
 		});
 
 		target.addEventListener('pointerup', (event) => {
@@ -149,31 +152,63 @@ export class InputSystem {
 		const pads = navigator.getGamepads?.();
 		const gamepad = pads && Array.from(pads).find(Boolean);
 		this.input.stick = { x: 0, y: 0 };
-		if (!gamepad) return this.input.stick;
-
-		this.input.stick.x = Math.abs(gamepad.axes[0]) > 0.18 ? gamepad.axes[0] : 0;
-		this.input.stick.y = Math.abs(gamepad.axes[1]) > 0.18 ? gamepad.axes[1] : 0;
-
-		for (const [index, action] of Object.entries(GAMEPAD_ACTION_MAP)) {
-			const down = gamepad.buttons[Number(index)]?.pressed ?? false;
-			const wasDown = this.input.padPrev[index] ?? false;
-			if (down && !wasDown) {
-				if (index === '9') {
-					const mode = this.getMode();
-					if (mode === 'title' || mode === 'dead' || mode === 'win') {
-						this.onStartFromMenu();
-					} else {
-						this.onAction(action);
-					}
-				} else {
-					this.onAction(action);
-				}
-			}
-			if (!down && wasDown && action === 'castStart') this.onCastRelease();
-			this.input.padPrev[index] = down;
+		if (!gamepad) {
+			this.resetGamepadState();
+			return this.input.stick;
 		}
 
+		this.input.stick.x = Math.abs(gamepad.axes[0] ?? 0) > 0.18 ? (gamepad.axes[0] ?? 0) : 0;
+		this.input.stick.y = Math.abs(gamepad.axes[1] ?? 0) > 0.18 ? (gamepad.axes[1] ?? 0) : 0;
+
+		const pressed = (index: number) => gamepad.buttons[index]?.pressed ?? false;
+		const wasPressed = (index: number) => this.input.padPrev[String(index)] ?? false;
+		const edgeDown = (index: number) => pressed(index) && !wasPressed(index);
+		const edgeUp = (index: number) => !pressed(index) && wasPressed(index);
+
+		const mode = this.getMode();
+		if ((mode === 'title' || mode === 'dead' || mode === 'win') && (edgeDown(PAD.A) || edgeDown(PAD.START))) {
+			this.onStartFromMenu();
+		} else {
+			if (edgeDown(PAD.START)) this.onAction('pause');
+			if (edgeDown(PAD.Y)) this.onAction('interact');
+			if (edgeDown(PAD.X)) this.onAction('activateUtility');
+			if (edgeDown(PAD.DPAD_UP)) this.onAction('cycleSpell');
+			if (edgeDown(PAD.DPAD_DOWN)) this.onAction('cycleUtility');
+
+			if (edgeDown(PAD.RB)) this.onAction('castStart');
+			if (edgeUp(PAD.RB)) this.onCastRelease();
+
+			if (edgeDown(PAD.B)) {
+				this.gamepadDodgeStartedAt = performance.now();
+				this.gamepadSprinting = false;
+			}
+			if (pressed(PAD.B) && wasPressed(PAD.B) && !this.gamepadSprinting) {
+				if (performance.now() - this.gamepadDodgeStartedAt >= DODGE_SPRINT_HOLD_MS) {
+					this.gamepadSprinting = true;
+					this.onAction('sprintStart');
+				}
+			}
+			if (edgeUp(PAD.B)) {
+				if (this.gamepadSprinting) {
+					this.gamepadSprinting = false;
+					this.onAction('sprintEnd');
+				} else {
+					this.onAction('dodge');
+				}
+			}
+		}
+
+		for (let i = 0; i < gamepad.buttons.length; i++) {
+			this.input.padPrev[String(i)] = gamepad.buttons[i]?.pressed ?? false;
+		}
 		return this.input.stick;
+	}
+
+	private resetGamepadState(): void {
+		if (this.gamepadSprinting) this.onAction('sprintEnd');
+		this.gamepadSprinting = false;
+		this.gamepadDodgeStartedAt = 0;
+		this.input.padPrev = {};
 	}
 
 	getMovementInput(): StickInput {
@@ -189,6 +224,8 @@ export class InputSystem {
 		this.input.touchStick = { x: 0, y: 0 };
 		this.slotControls?.reset();
 		this.resetMouseState();
+		this.resetGamepadState();
+		this.resetGamepadState();
 	}
 
 	private mapKeyboardDown(key: string): PlayerAction | null {
