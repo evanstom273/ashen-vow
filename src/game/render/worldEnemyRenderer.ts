@@ -58,6 +58,21 @@ function drawWeapon(ctx: CanvasRenderingContext2D, enemy: WorldEnemyState): void
 	ctx.restore();
 }
 
+function drawHealthBar(ctx: CanvasRenderingContext2D, enemy: WorldEnemyState): void {
+	if (!enemy.alive) return;
+	const visible = enemy.hp < enemy.maxHp || enemy.awarenessState !== 'unaware';
+	if (!visible) return;
+	const width = 42;
+	const progress = Math.max(0, Math.min(1, enemy.hp / Math.max(1, enemy.maxHp)));
+	ctx.fillStyle = '#090c0acc';
+	ctx.fillRect(-width / 2, -68, width, 6);
+	ctx.fillStyle = '#7f2f2d';
+	ctx.fillRect(-width / 2 + 1, -67, (width - 2) * progress, 4);
+	ctx.strokeStyle = '#c8bfa055';
+	ctx.lineWidth = 1;
+	ctx.strokeRect(-width / 2, -68, width, 6);
+}
+
 function drawAwareness(ctx: CanvasRenderingContext2D, enemy: WorldEnemyState): void {
 	if (enemy.awareness <= 0 && enemy.awarenessState === 'unaware') return;
 	const width = 34;
@@ -81,6 +96,7 @@ export function drawWorldEnemy(ctx: CanvasRenderingContext2D, enemy: WorldEnemyS
 	ctx.save();
 	ctx.translate(enemy.x, enemy.y + death * 18);
 	ctx.globalAlpha *= Math.max(0.05, 1 - death);
+	drawHealthBar(ctx, enemy);
 	ctx.rotate(enemy.facing + Math.PI / 2 + step * 0.025 + death * 0.65);
 
 	drawCircle(ctx, 2, 15, 16, '#0007');
